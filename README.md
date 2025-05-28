@@ -65,6 +65,7 @@ Due to Reddit's API restrictions, the extension is subject to the following rate
 
 - 100 queries per minute (QPM) per OAuth client ID
 - QPM limits are averaged over a 10-minute window, allowing for some request bursting
+- Due to using implicit grant flow for authentication, login tokens expire after 1 hour and require re-authentication (I know this is not ideal, but changing this would require major restructuring)
 
 ## License
 
