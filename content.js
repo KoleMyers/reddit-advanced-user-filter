@@ -21,15 +21,15 @@ let filterOptions = null;
 
 function shouldFilterUser(user) {
   const age = daysSince(user.created);
-  if (age < filterOptions.minAccountAgeDays) return "Account too new";
-  if (user.karma < filterOptions.minKarma) return "Karma too low";
-  if (user.karma > filterOptions.maxKarma) return "Karma too high";
+  if (age < filterOptions.minAccountAgeDays) return `Account too new: ${age.toFixed(1)} days`;
+  if (user.karma < filterOptions.minKarma) return `Karma too low: ${user.karma.toLocaleString()}`;
+  if (user.karma > filterOptions.maxKarma) return `Karma too high: ${user.karma.toLocaleString()}`;
   if (filterOptions.requireVerifiedEmail && !user.has_verified_email) return "Email not verified";
-  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) return "Missing either link or comment karma";
+  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) return `Missing either link (${user.link_karma.toLocaleString()}) or comment (${user.comment_karma.toLocaleString()}) karma`;
   if (filterOptions.excludePremium && user.is_gold) return "Premium user";
   if (filterOptions.excludeMods && user.is_mod) return "Moderator";
   if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
-    return `Link karma (${user.link_karma}) is more than ${filterOptions.linkKarmaRatio}x comment karma (${user.comment_karma})`;
+    return `Link/Comment karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
   }
   return null;
 }
@@ -106,6 +106,38 @@ function getUsernameFromPost(post) {
   return authorElem.textContent.trim();
 }
 
+function getPostInfo(post) {
+  let title = '';
+  let url = '';
+  // New Reddit
+  const titleElem = post.querySelector('h3');
+  if (titleElem) title = titleElem.textContent.trim();
+  const postLinkElem = post.querySelector('a[data-click-id="body"]');
+  if (postLinkElem) url = postLinkElem.href;
+  // Old Reddit fallback
+  if (!title) {
+    const oldTitleElem = post.querySelector('a.title');
+    if (oldTitleElem) title = oldTitleElem.textContent.trim();
+    if (oldTitleElem) url = oldTitleElem.href;
+  }
+  // Try to extract subreddit, post ID, and slug from the URL
+  let commentsUrl = url;
+  const match = url.match(/reddit\.com\/(r\/([^\/]+)\/)?comments\/([a-z0-9]+)(?:\/([^\/?#]+))?/i);
+  if (match) {
+    const subreddit = match[2];
+    const postId = match[3];
+    const slug = match[4];
+    if (subreddit && postId && slug) {
+      commentsUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/${slug}`;
+    } else if (subreddit && postId) {
+      commentsUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}`;
+    } else if (postId) {
+      commentsUrl = `https://www.reddit.com/comments/${postId}`;
+    }
+  }
+  return { title, url: commentsUrl };
+}
+
 async function processPost(post, username) {
   try {
     const user = await fetchUserData(username);
@@ -113,10 +145,22 @@ async function processPost(post, username) {
     if (filterReason) {
       post.style.display = "none";
       console.log(`Filtered user: ${username} (https://www.reddit.com/user/${username}) - Reason: ${filterReason}`);
+      const { title, url } = getPostInfo(post);
+      chrome.storage.local.get({ filteredUsers: [] }, ({ filteredUsers }) => {
+        if (!filteredUsers.some(u => u.username === username && u.postUrl === url)) {
+          filteredUsers.unshift({ username, reason: filterReason, url: `https://www.reddit.com/user/${username}`, postTitle: title, postUrl: url });
+          chrome.storage.local.set({ filteredUsers });
+        }
+      });
     }
   } catch (err) {
     console.warn("Failed to fetch user:", username, err);
   }
+}
+
+function isPostPage() {
+  // Matches /r/subreddit/comments/postid/...
+  return /\/r\/[^\/]+\/comments\/[a-z0-9]+/i.test(window.location.pathname);
 }
 
 function observePosts() {
@@ -126,7 +170,10 @@ function observePosts() {
     ...document.querySelectorAll(".Post") // new Reddit
   ];
 
-  posts.forEach(post => {
+  let skipFirst = isPostPage();
+  posts.forEach((post, idx) => {
+    // If on a post page, skip filtering the main post (first post element)
+    if (skipFirst && idx === 0) return;
     if (!post._observerAttached) { // Prevent double-observing
       observer.observe(post);
       post._observerAttached = true;

@@ -1,8 +1,49 @@
 <!DOCTYPE html>
 <html>
-  <head><title>Reddit Advanced User Filter</title></head>
+  <head>
+    <title>Reddit Advanced User Filter</title>
+    <style>
+      body {
+        background: #181818;
+        color: #f5f5f5;
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 8px;
+      }
+      table {
+        background: #222;
+        color: #f5f5f5;
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th, td {
+        border: 1px solid #333;
+        padding: 2px 4px;
+        text-align: left;
+      }
+      th {
+        background: #222;
+      }
+      a { color: #aad7ff; }
+      button { background: #222; color: #f5f5f5; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; }
+      button:hover { background: #333; }
+    </style>
+  </head>
   <body>
     <button id="login">Login with Reddit</button>
+    <h3>Filtered Users</h3>
+    <table id="filtered-users-table" border="1" style="width:100%; font-size:12px;">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Reason</th>
+          <th>Post</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filtered users will be inserted here -->
+      </tbody>
+    </table>
     <script src="popup.js"></script>
   </body>
 </html>
