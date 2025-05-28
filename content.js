@@ -200,7 +200,7 @@ const onIntersect = (entries, obs) => {
 const observer = new IntersectionObserver(onIntersect, {
   root: null,
   rootMargin: "500px 0px",
-  threshold: 0.1 // Start loading when 10% visible and within 500px below viewport
+  threshold: 0.2
 });
 
 function enqueueUser(post, username) {
