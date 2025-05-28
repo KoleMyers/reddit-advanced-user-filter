@@ -11,6 +11,7 @@ A browser extension for more advanced user filtering for Reddit.com, beyond what
   - Combined post and comment karma requirements
   - Premium user status
   - Moderator status
+  - Link-to-comment karma ratio filtering (e.g. link karma 100x greater than comment karma)
 
 ## Setup
 
@@ -51,6 +52,7 @@ The extension can be configured through the `options.json` file with the followi
 - `requireBothKarmaTypes`: Whether to require both post and comment karma (default: false)
 - `excludePremium`: Whether to exclude premium users (default: false)
 - `excludeMods`: Whether to exclude moderators (default: false)
+- `linkKarmaRatio`: Filter users whose link karma exceeds their comment karma by this ratio (default: 100)
 
 ## Limitations
 
