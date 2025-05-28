@@ -2,8 +2,6 @@
 
 A browser extension for more advanced user filtering for Reddit.com, beyond what's currently available in Reddit Enhancement Suite (RES).
 
-## Screenshot
-
 ![Screenshot of Reddit Advanced User Filter popup](screenshots/popup-example.png)
 
 ## Features
