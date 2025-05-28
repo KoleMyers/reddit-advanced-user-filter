@@ -41,6 +41,11 @@ A browser extension for more advanced user filtering for Reddit.com, beyond what
    - Chrome: Go to `chrome://extensions/`, enable "Developer mode", click "Load unpacked" and select the extension directory
    - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select any file in the extension directory
 
+5. Add the extension to your toolbar and log in:
+   - After loading the extension, pin it to your browser's toolbar (in Chrome, click the puzzle piece icon and pin the extension).
+   - Click the extension icon in your toolbar.
+   - In the popup, click the **Login with Reddit** button to authenticate and grant the extension access.
+
 ## Configuration
 
 The extension can be configured through the `options.json` file with the following settings:
