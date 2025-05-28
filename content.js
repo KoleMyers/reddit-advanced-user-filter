@@ -164,7 +164,7 @@ async function processQueue() {
   while (userQueue.length > 0) {
     const { post, username } = userQueue.shift();
     await processPost(post, username);
-    await new Promise(res => setTimeout(res, 600));
+    await new Promise(res => setTimeout(res, 100));
   }
   processing = false;
 }
