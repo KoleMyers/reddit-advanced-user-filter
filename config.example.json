@@ -1,0 +1,4 @@
+{
+  "CLIENT_ID": "YOUR_REDDIT_APP_CLIENT_ID",
+  "REDIRECT_URI": "https://example.com/reddit_oauth"
+} 

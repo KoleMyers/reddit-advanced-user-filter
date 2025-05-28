@@ -1,0 +1,10 @@
+{
+  "minAccountAgeDays": 200,
+  "minKarma": 100,
+  "maxKarma": 1500000,
+  "requireVerifiedEmail": false,
+  "requireBothKarmaTypes": true,
+  "excludePremium": false,
+  "excludeMods": false,
+  "linkKarmaRatio": 100
+} 
