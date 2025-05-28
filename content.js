@@ -1,4 +1,3 @@
-// cache for user data
 const userCache = {};
 
 let userQueue = [];

@@ -1,6 +1,5 @@
 let CLIENT_ID, REDIRECT_URI;
 
-// Load config.json at startup
 fetch(chrome.runtime.getURL('config.json'))
   .then(res => res.json())
   .then(config => {
@@ -46,7 +45,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             if (accessToken) {
               chrome.storage.local.set({ reddit_token: accessToken });
-              chrome.tabs.remove(tabId); // Close the tab
+              chrome.tabs.remove(tabId);
               sendResponse({ success: true });
             } else {
               sendResponse({ success: false });
