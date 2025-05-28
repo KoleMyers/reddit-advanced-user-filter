@@ -1,6 +1,6 @@
 {
-  "minAccountAgeDays": 200,
-  "minKarma": 100,
+  "minAccountAgeDays": 90,
+  "minKarma": 10,
   "maxKarma": 1500000,
   "requireVerifiedEmail": false,
   "requireBothKarmaTypes": true,

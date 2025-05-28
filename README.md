@@ -50,11 +50,11 @@ A browser extension for more advanced user filtering for Reddit.com, beyond what
 
 The extension can be configured through the `options.json` file with the following settings:
 
-- `minAccountAgeDays`: Minimum account age in days (default: 30)
+- `minAccountAgeDays`: Minimum account age in days (default: 90)
 - `minKarma`: Minimum karma threshold (default: 10)
-- `maxKarma`: Maximum karma threshold (default: 1000000)
+- `maxKarma`: Maximum karma threshold (default: 1500000)
 - `requireVerifiedEmail`: Whether to require verified email (default: false)
-- `requireBothKarmaTypes`: Whether to require both post and comment karma (default: false)
+- `requireBothKarmaTypes`: Whether to require both post and comment karma (default: true)
 - `excludePremium`: Whether to exclude premium users (default: false)
 - `excludeMods`: Whether to exclude moderators (default: false)
 - `linkKarmaRatio`: Filter users whose link karma exceeds their comment karma by this ratio (default: 100)
