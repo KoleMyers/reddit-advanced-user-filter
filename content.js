@@ -4,6 +4,18 @@ const userCache = {};
 let userQueue = [];
 let processing = false;
 
+// Pages where filtering should be skipped
+const SKIP_FILTER_PATTERNS = [
+  /\/user\//,           // User profile pages
+  /\/message\//,        // Messages
+  /\/modmail\//,        // Modmail
+  /\/chat\//,           // Chat
+];
+
+function shouldSkipFiltering() {
+  return SKIP_FILTER_PATTERNS.some(pattern => pattern.test(window.location.pathname));
+}
+
 // Load filter options from options.json
 let filterOptions = null;
 
@@ -27,6 +39,11 @@ async function loadFilterOptions() {
     const res = await fetch(chrome.runtime.getURL('options.json'));
     filterOptions = await res.json();
     console.log('Loaded filter options:', filterOptions);
+    // Skip filtering if on a page that should not be filtered
+    if (shouldSkipFiltering()) {
+      return;
+    }
+    // Start observing posts after options are loaded
     observePosts();
     const mutationObserver = new MutationObserver(observePosts);
     mutationObserver.observe(document.body, { childList: true, subtree: true });
