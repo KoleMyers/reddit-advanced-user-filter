@@ -148,6 +148,9 @@ async function processPost(post, username) {
       const { title, url } = getPostInfo(post);
       chrome.storage.local.get({ filteredUsers: [] }, ({ filteredUsers }) => {
         if (!filteredUsers.some(u => u.username === username && u.postUrl === url)) {
+          if (filteredUsers.length >= 1000) { // Limit to 1000 entries
+            filteredUsers.pop();
+          }
           filteredUsers.unshift({ username, reason: filterReason, url: `https://www.reddit.com/user/${username}`, postTitle: title, postUrl: url });
           chrome.storage.local.set({ filteredUsers });
         }
