@@ -9,6 +9,36 @@
         font-family: system-ui, sans-serif;
         margin: 0;
         padding: 8px;
+        width: 550px;
+        min-width: 550px;
+        max-width: 550px;
+        max-height: 600px;
+        overflow-y: auto;
+      }
+      .tabs {
+        display: flex;
+        margin-bottom: 10px;
+      }
+      .tab {
+        flex: 1;
+        padding: 8px 0;
+        text-align: center;
+        background: #222;
+        color: #f5f5f5;
+        border: 1px solid #333;
+        cursor: pointer;
+        border-bottom: none;
+      }
+      .tab.active {
+        background: #181818;
+        font-weight: bold;
+        border-bottom: 2px solid #aad7ff;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
       }
       table {
         background: #222;
@@ -27,23 +57,131 @@
       a { color: #aad7ff; }
       button { background: #222; color: #f5f5f5; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; }
       button:hover { background: #333; }
+      .options-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 8px;
+      }
+      .option-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        padding: 4px 0 4px 8px;
+      }
+      .option-row:nth-child(odd) {
+        background: #232323;
+      }
+      .option-row:nth-child(even) {
+        background: #292929;
+      }
+      .options-grid label {
+        justify-self: start;
+        font-size: 14px;
+      }
+      .options-grid input[type="number"] {
+        width: 80px;
+      }
+      #config-form .option-row {
+        margin-bottom: 10px;
+      }
     </style>
   </head>
   <body>
-    <button id="login">Login with Reddit</button>
-    <h3>Filtered Posts</h3>
-    <table id="filtered-users-table" border="1" style="width:100%; font-size:12px;">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Reason</th>
-          <th>Post</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Filtered users will be inserted here -->
-      </tbody>
-    </table>
+    <div class="tabs">
+      <div class="tab active" id="tab-posts">Filtered Posts</div>
+      <div class="tab" id="tab-options">Options</div>
+      <div class="tab" id="tab-config">Reddit API Config</div>
+    </div>
+    <div class="tab-content active" id="content-posts">
+      <div id="clientid-warning" style="display:none; color:#ff4d4d; font-weight:bold; margin-bottom:8px;"></div>
+      <table id="filtered-users-table" border="1" style="width:100%; font-size:12px;">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Reason</th>
+            <th>Post</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filtered users will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-content" id="content-options">
+      <form id="options-form">
+        <div class="options-grid">
+          <div class="option-row">
+            <label for="minAccountAgeDays">Minimum account age (days)</label>
+            <input type="number" id="minAccountAgeDays" min="0" step="1">
+          </div>
+          <div class="option-row">
+            <label for="minKarma">Minimum karma</label>
+            <input type="number" id="minKarma" min="0" step="1">
+          </div>
+          <div class="option-row">
+            <label for="maxKarma">Maximum karma</label>
+            <input type="number" id="maxKarma" min="0" step="1">
+          </div>
+          <div class="option-row">
+            <label for="requireVerifiedEmail">Require verified email</label>
+            <input type="checkbox" id="requireVerifiedEmail">
+          </div>
+          <div class="option-row">
+            <label for="requireBothKarmaTypes">Require both post and comment karma</label>
+            <input type="checkbox" id="requireBothKarmaTypes">
+          </div>
+          <div class="option-row">
+            <label for="excludePremium">Exclude premium users</label>
+            <input type="checkbox" id="excludePremium">
+          </div>
+          <div class="option-row">
+            <label for="excludeMods">Exclude moderators</label>
+            <input type="checkbox" id="excludeMods">
+          </div>
+          <div class="option-row">
+            <label for="linkKarmaRatio">Link/Comment karma ratio (0 to disable)</label>
+            <input type="number" id="linkKarmaRatio" min="0" step="1">
+          </div>
+        </div>
+        <div style="color: #ffd700; margin: 8px 0; font-size: 13px;">
+          Warning: Saving new options will clear your filtered users cache and re-filter all visible posts.
+        </div>
+        <button type="button" id="save-options" style="margin-top: 8px;">Save Options</button>
+      </form>
+    </div>
+    <div class="tab-content" id="content-config">
+      <div id="config-warning" style="color:#ff4d4d; font-weight:bold; margin-bottom:8px;">
+        <b>Required:</b> You must set your Reddit App Client ID and authenticate (click the login button and allow access) before the filter will work.
+      </div>
+      <form id="config-form">
+        <div class="option-row">
+          <label for="clientId">Reddit App Client ID</label>
+          <input type="text" id="clientId" autocomplete="off" style="width: 220px;">
+        </div>
+        <button id="login" type="button">Login with Reddit</button>
+      </form>
+      <div style="margin-top: 16px; font-size: 13px;">
+        <strong>How to create a Reddit app:</strong>
+        <ol style="margin-top: 4px; margin-bottom: 8px;">
+          <li>Go to <a href="https://www.reddit.com/prefs/apps" target="_blank">https://www.reddit.com/prefs/apps</a></li>
+          <li>Click <b>create another app...</b> at the bottom</li>
+          <li>Fill in the following details:<br>
+            &nbsp;&nbsp;- <b>Name:</b> Any name you like<br>
+            &nbsp;&nbsp;- <b>Type:</b> <b>installed app</b><br>
+            &nbsp;&nbsp;- <b>Redirect URI:</b> <code>https://example.com/reddit_oauth</code>
+          </li>
+          <li>Click <b>create app</b></li>
+          <li>Copy the <b>client ID</b> (the 14-character string under "installed app") and paste it above</li>
+        </ol>
+        <strong>Limitations:</strong>
+        <ul style="margin-top: 4px;">
+          <li>Reddit login tokens expire after 1 hour and require re-authentication.</li>
+          <li>100 queries per minute (QPM) per OAuth client ID.</li>
+          <li>QPM limits are averaged over a 10-minute window, allowing for some request bursting.</li>
+        </ul>
+      </div>
+    </div>
     <script src="popup.js"></script>
   </body>
 </html>

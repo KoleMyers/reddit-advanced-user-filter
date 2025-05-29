@@ -15,28 +15,37 @@ function shouldSkipFiltering() {
   return SKIP_FILTER_PATTERNS.some(pattern => pattern.test(window.location.pathname));
 }
 
-// Load filter options from options.json
-let filterOptions = null;
+// Default options
+const defaultOptions = {
+  minAccountAgeDays: 90,
+  minKarma: 10,
+  maxKarma: 1500000,
+  requireVerifiedEmail: false,
+  requireBothKarmaTypes: true,
+  excludePremium: false,
+  excludeMods: false,
+  linkKarmaRatio: 100
+};
 
-function shouldFilterUser(user) {
-  const age = daysSince(user.created);
-  if (age < filterOptions.minAccountAgeDays) return `Account too new: ${age.toFixed(1)} days`;
-  if (user.karma < filterOptions.minKarma) return `Karma too low: ${user.karma.toLocaleString()}`;
-  if (user.karma > filterOptions.maxKarma) return `Karma too high: ${user.karma.toLocaleString()}`;
-  if (filterOptions.requireVerifiedEmail && !user.has_verified_email) return "Email not verified";
-  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) return `Missing either link (${user.link_karma.toLocaleString()}) or comment (${user.comment_karma.toLocaleString()}) karma`;
-  if (filterOptions.excludePremium && user.is_gold) return "Premium user";
-  if (filterOptions.excludeMods && user.is_mod) return "Moderator";
-  if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
-    return `Link/Comment karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
-  }
-  return null;
-}
+let filterOptions = null;
 
 async function loadFilterOptions() {
   try {
-    const res = await fetch(chrome.runtime.getURL('options.json'));
-    filterOptions = await res.json();
+    const { minAccountAgeDays, minKarma, maxKarma, requireVerifiedEmail, 
+            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio } = 
+      await chrome.storage.local.get(defaultOptions);
+    
+    filterOptions = {
+      minAccountAgeDays,
+      minKarma,
+      maxKarma,
+      requireVerifiedEmail,
+      requireBothKarmaTypes,
+      excludePremium,
+      excludeMods,
+      linkKarmaRatio
+    };
+    
     console.log('Loaded filter options:', filterOptions);
     // Skip filtering if on a page that should not be filtered
     if (shouldSkipFiltering()) {
@@ -49,6 +58,27 @@ async function loadFilterOptions() {
   } catch (err) {
     console.error('Failed to load filter options:', err);
   }
+}
+
+function shouldFilterUser(user) {
+  if (!filterOptions) {
+    console.warn('Filter options not loaded yet');
+    return null;
+  }
+
+  const age = daysSince(user.created);
+  if (age < filterOptions.minAccountAgeDays) return `Account too new: ${age.toFixed(1)} days`;
+  if (user.karma < filterOptions.minKarma) return `Karma too low: ${user.karma.toLocaleString()}`;
+  if (user.karma > filterOptions.maxKarma) return `Karma too high: ${user.karma.toLocaleString()}`;
+  if (filterOptions.requireVerifiedEmail && !user.has_verified_email) return "Email not verified";
+  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) 
+    return `Missing either link (${user.link_karma.toLocaleString()}) or comment (${user.comment_karma.toLocaleString()}) karma`;
+  if (filterOptions.excludePremium && user.is_gold) return "Premium user";
+  if (filterOptions.excludeMods && user.is_mod) return "Moderator";
+  if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
+    return `Link/Comment karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
+  }
+  return null;
 }
 
 // Wait for options to load before running any filtering
@@ -74,21 +104,38 @@ async function fetchUserData(username) {
     chrome.runtime.sendMessage(
       { type: "fetchUserData", username, token },
       (response) => {
-        if (response && response.success) {
-          const userData = {
-            created: response.data.data.created_utc,
-            karma: response.data.data.total_karma,
-            link_karma: response.data.data.link_karma,
-            comment_karma: response.data.data.comment_karma,
-            has_verified_email: response.data.data.has_verified_email,
-            is_gold: response.data.data.is_gold,
-            is_mod: response.data.data.is_mod
-          };
-          userCache[username] = userData;
-          resolve(userData);
+        if (!response) {
+          reject("No response received from background script");
+          return;
+        }
+        if (response.success && response.data && response.data.data) {
+          try {
+            const userData = {
+              created: response.data.data.created_utc,
+              karma: response.data.data.total_karma,
+              link_karma: response.data.data.link_karma,
+              comment_karma: response.data.data.comment_karma,
+              has_verified_email: response.data.data.has_verified_email,
+              is_gold: response.data.data.is_gold,
+              is_mod: response.data.data.is_mod
+            };
+            userCache[username] = userData;
+            // Clear any warnings since we got a successful response
+            chrome.runtime.sendMessage({ type: "clearWarnings" });
+            resolve(userData);
+          } catch (err) {
+            reject("Error processing user data: " + err.message);
+          }
         } else {
-          console.log(response);
-          reject(response ? response.error : "Unknown error");
+          const error = response.error || "Invalid response format";
+          if (response.error) {
+            if (response.error.includes('Status 401')) {
+              chrome.runtime.sendMessage({ type: "showAuthWarning" });
+            } else if (response.error.includes('Status 429')) {
+              chrome.runtime.sendMessage({ type: "showRateLimitWarning" });
+            }
+          }
+          reject(error);
         }
       }
     );
@@ -156,7 +203,7 @@ async function processPost(post, username) {
       });
     }
   } catch (err) {
-    console.warn("Failed to fetch user:", username, err);
+    console.warn(`Failed to process post for user ${username}:`, err);
   }
 }
 
@@ -217,3 +264,13 @@ async function processQueue() {
   }
   processing = false;
 }
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "clearCacheAndReload") {
+    // Clear the user cache
+    Object.keys(userCache).forEach(key => delete userCache[key]);
+    // Reload filter options
+    loadFilterOptions();
+  }
+});

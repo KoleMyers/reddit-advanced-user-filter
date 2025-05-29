@@ -2,6 +2,7 @@
   "manifest_version": 2,
   "name": "Reddit Advanced User Filter",
   "version": "1.0",
+  "description": "Filter Reddit posts based on user account age, karma, and other criteria",
   "permissions": [
     "storage",
     "tabs",
@@ -9,16 +10,6 @@
     "https://example.com/*",
     "https://oauth.reddit.com/*"
   ],
-  "background": {
-    "scripts": ["background.js"],
-    "persistent": false
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
   "browser_action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -28,14 +19,24 @@
       "128": "icons/icon128.png"
     }
   },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://www.reddit.com/*"],
+      "matches": ["https://*.reddit.com/*"],
       "js": ["content.js"]
     }
   ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
   "web_accessible_resources": [
-    "options.json",
-    "config.json"
+    "popup.html",
+    "popup.js"
   ]
 }

@@ -2,7 +2,8 @@
 
 A browser extension for more advanced user filtering for Reddit.com, beyond what's currently available in Reddit Enhancement Suite (RES).
 
-![Screenshot of Reddit Advanced User Filter popup](screenshots/popup-example.png)
+![Screenshot of Reddit Advanced User Filter popup - Filtered Posts tab](screenshots/popup-example-1.png)
+![Screenshot of Reddit Advanced User Filter popup - Options tab](screenshots/popup-example-2.png)
 
 ## Features
 
@@ -15,51 +16,45 @@ A browser extension for more advanced user filtering for Reddit.com, beyond what
   - Moderator status
   - Link-to-comment karma ratio filtering (e.g. link karma 100x greater than comment karma)
 
-## Setup
+## Installation
 
 1. Clone this repository
-
-2. Create a Reddit application:
-   - Go to https://www.reddit.com/prefs/apps
-   - Click "create another app..." at the bottom
-   - Fill in the following details:
-     - Name: "Reddit Advanced User Filter" (or any name you prefer)
-     - Select "installed app" as the type
-     - About URL: Can be left blank
-     - Redirect URI: "https://example.com/reddit_oauth"
-   - Click "create app"
-   - Note the client ID
-
-3. Create a `config.json` file in the root directory with your Reddit API credentials:
-   ```json
-   {
-     "CLIENT_ID": "YOUR_REDDIT_APP_CLIENT_ID",
-     "REDIRECT_URI": "https://example.com/reddit_oauth"
-   }
-   ```
-   Replace `YOUR_REDDIT_APP_CLIENT_ID` with the client ID you noted in the previous step.
-
-4. Load the extension in your browser:
+2. Load the extension in your browser:
    - Chrome: Go to `chrome://extensions/`, enable "Developer mode", click "Load unpacked" and select the extension directory
    - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select any file in the extension directory
 
-5. Add the extension to your toolbar and log in:
-   - After loading the extension, pin it to your browser's toolbar (in Chrome, click the puzzle piece icon and pin the extension).
-   - Click the extension icon in your toolbar.
-   - In the popup, click the **Login with Reddit** button to authenticate and grant the extension access.
-
 ## Configuration
 
-The extension can be configured through the `options.json` file with the following settings:
+1. Add the extension to your toolbar and open the popup:
+   - After loading the extension, pin it to your browser's toolbar (in Chrome, click the puzzle piece icon and pin the extension)
+   - Click the extension icon in your toolbar
 
-- `minAccountAgeDays`: Minimum account age in days (default: 90)
-- `minKarma`: Minimum karma threshold (default: 10)
-- `maxKarma`: Maximum karma threshold (default: 1500000)
-- `requireVerifiedEmail`: Whether to require verified email (default: false)
-- `requireBothKarmaTypes`: Whether to require both post and comment karma (default: true)
-- `excludePremium`: Whether to exclude premium users (default: false)
-- `excludeMods`: Whether to exclude moderators (default: false)
-- `linkKarmaRatio`: Filter users whose link karma exceeds their comment karma by this ratio (default: 100)
+2. Set up Reddit API access:
+   - Go to the "Reddit API Config" tab
+   - Create a Reddit app at https://www.reddit.com/prefs/apps
+     - Click "create another app..." at the bottom
+     - Fill in the following details:
+       - Name: "Reddit Advanced User Filter" (or any name you prefer)
+       - Select "installed app" as the type
+       - About URL: Can be left blank
+       - Redirect URI: "https://example.com/reddit_oauth"
+     - Click "create app"
+     - Copy the client ID (the 14-character string under "installed app")
+   - Paste your client ID into the extension popup
+   - Click "Login with Reddit" to authenticate and grant the extension access
+
+3. Configure filter options:
+   - Go to the "Options" tab
+   - Adjust the following settings:
+     - Minimum account age in days (default: 90)
+     - Minimum karma threshold (default: 10)
+     - Maximum karma threshold (default: 1500000)
+     - Whether to require verified email (default: false)
+     - Whether to require both post and comment karma (default: true)
+     - Whether to exclude premium users (default: false)
+     - Whether to exclude moderators (default: false)
+     - Link-to-comment karma ratio (default: 100)
+   - Click "Save Options" to apply your changes
 
 ## Limitations
 
