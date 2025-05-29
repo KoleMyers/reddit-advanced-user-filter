@@ -1,6 +1,6 @@
 # Reddit Advanced User Filter
 
-A browser extension for more advanced user filtering for Reddit.com, beyond what's currently available in Reddit Enhancement Suite (RES).
+A browser extension that filters Reddit posts based on user account age, karma, and other criteria. Provides extra account filtering options beyond what's available in Reddit Enhancement Suite (RES).
 
 ![Screenshot of Reddit Advanced User Filter popup - Filtered Posts tab](screenshots/popup-example-1.png)
 ![Screenshot of Reddit Advanced User Filter popup - Options tab](screenshots/popup-example-2.png)
@@ -32,14 +32,14 @@ A browser extension for more advanced user filtering for Reddit.com, beyond what
 2. Set up Reddit API access:
    - Go to the "Reddit API Config" tab
    - Create a Reddit app at https://www.reddit.com/prefs/apps
-     - Click "create another app..." at the bottom
-     - Fill in the following details:
-       - Name: "Reddit Advanced User Filter" (or any name you prefer)
-       - Select "installed app" as the type
-       - About URL: Can be left blank
-       - Redirect URI: "https://example.com/reddit_oauth"
-     - Click "create app"
-     - Copy the client ID (the 14-character string under "installed app")
+   - Click "create another app..." at the bottom
+   - Fill in the following details:
+     - Name: "Reddit Advanced User Filter" (or any name you prefer)
+     - Select "installed app" as the type
+     - About URL: Can be left blank
+     - Redirect URI: "https://example.com/reddit_oauth"
+   - Click "create app"
+   - Copy the client ID (the 14-character string under "installed app")
    - Paste your client ID into the extension popup
    - Click "Login with Reddit" to authenticate and grant the extension access
 
@@ -64,6 +64,19 @@ Due to Reddit's API restrictions, the extension is subject to the following rate
 - QPM limits are averaged over a 10-minute window, allowing for some request bursting
 - Due to using implicit grant flow for authentication, login tokens expire after 1 hour and require re-authentication (I know this is not ideal, but changing this would require major restructuring)
 
+## Privacy
+
+This extension:
+- Stores all data locally in your browser
+- Only makes requests to Reddit's API
+- Does not collect or transmit any personal data
+
+See [PRIVACY.md](PRIVACY.md) for more details.
+
 ## License
 
-MIT License - see LICENSE file for details 
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Author
+
+Kole Myers - [GitHub](https://github.com/kolemyers) 
