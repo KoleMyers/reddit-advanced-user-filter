@@ -3,6 +3,7 @@
   "name": "Reddit Advanced User Filter",
   "version": "1.0",
   "description": "Filter Reddit posts based on user account age, karma, and other criteria",
+  "author": "Kole Myers (https://github.com/kolemyers)",
   "permissions": [
     "storage",
     "tabs",
