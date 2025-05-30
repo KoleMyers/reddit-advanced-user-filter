@@ -45,7 +45,6 @@ async function loadFilterOptions() {
       linkKarmaRatio
     };
     
-    console.log('Loaded filter options:', filterOptions);
     // Skip filtering if on a page that should not be filtered
     if (shouldSkipFiltering()) {
       return;
@@ -147,29 +146,55 @@ async function fetchUserData(username) {
 }
 
 function getUsernameFromPost(post) {
+  // Try new Reddit first (shreddit-post)
+  if (post.tagName === 'SHREDDIT-POST') {
+    const author = post.getAttribute('author');
+    if (author) return author;
+  }
+  
   // Try old Reddit
   const author = post.getAttribute('data-author');
-  if (author) return author;
-  // Try new Reddit
+  if (author) {
+    return author;
+  }
+  
+  // Try new Reddit (alternative format)
   const authorElem = post.querySelector('a.author[href*="/user/"]');
-  if (!authorElem) return null;
-  return authorElem.textContent.trim();
+  if (authorElem) {
+    const username = authorElem.textContent.trim();
+    return username;
+  }
+
+  return null;
 }
 
 function getPostInfo(post) {
   let title = '';
   let url = '';
-  // New Reddit
+
+  // Try new Reddit (shreddit-post)
+  if (post.tagName === 'SHREDDIT-POST') {
+    title = post.getAttribute('post-title') || '';
+    const permalink = post.getAttribute('permalink');
+    if (permalink) {
+      url = `https://www.reddit.com${permalink}`;
+    }
+    return { title, url };
+  }
+
+  // Try new Reddit (alternative format)
   const titleElem = post.querySelector('h3');
   if (titleElem) title = titleElem.textContent.trim();
   const postLinkElem = post.querySelector('a[data-click-id="body"]');
   if (postLinkElem) url = postLinkElem.href;
+
   // Old Reddit fallback
   if (!title) {
     const oldTitleElem = post.querySelector('a.title');
     if (oldTitleElem) title = oldTitleElem.textContent.trim();
     if (oldTitleElem) url = oldTitleElem.href;
   }
+
   // Try to extract subreddit, post ID, and slug from the URL
   let commentsUrl = url;
   const match = url.match(/reddit\.com\/(r\/([^\/]+)\/)?comments\/([a-z0-9]+)(?:\/([^\/?#]+))?/i);
@@ -185,6 +210,7 @@ function getPostInfo(post) {
       commentsUrl = `https://www.reddit.com/comments/${postId}`;
     }
   }
+
   return { title, url: commentsUrl };
 }
 
@@ -221,7 +247,8 @@ function isPostPage() {
 function observePosts() {
   const posts = [
     ...document.querySelectorAll(".thing[data-author]"), // old Reddit
-    ...document.querySelectorAll(".Post") // new Reddit
+    ...document.querySelectorAll(".Post"), // new Reddit
+    ...document.querySelectorAll("shreddit-post") // new Reddit shreddit format
   ];
 
   let skipFirst = isPostPage();
@@ -253,6 +280,9 @@ const observer = new IntersectionObserver(onIntersect, {
   rootMargin: "500px 0px",
   threshold: 0.2
 });
+
+// Start observing the document body for new posts
+observer.observe(document.body, { childList: true, subtree: true });
 
 function enqueueUser(post, username) {
   userQueue.push({ post, username });
