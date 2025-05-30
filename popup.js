@@ -90,16 +90,21 @@ function saveOptionsFromForm() {
   
   // Save options
   chrome.storage.local.set(options, () => {
-    // Clear the filtered users table
-    chrome.storage.local.set({ filteredUsers: [] }, () => {
-      // Notify content script to clear cache and reload
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, { type: "clearCacheAndReload" });
-        }
+    chrome.storage.local.get(['filteredUsers', 'reddit_token', 'CLIENT_ID'], (data) => {
+      chrome.storage.local.set({
+        filteredUsers: [],
+        reddit_token: data.reddit_token,
+        CLIENT_ID: data.CLIENT_ID
+      }, () => {
+        // Notify content script to clear cache and reload
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { type: "clearCacheAndReload" });
+          }
+        });
+        // Refresh the table display
+        populateFilteredUsersTable();
       });
-      // Refresh the table display
-      populateFilteredUsersTable();
     });
   });
 }
