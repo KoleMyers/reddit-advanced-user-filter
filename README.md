@@ -18,10 +18,28 @@ A browser extension that filters Reddit posts based on user account age, karma, 
 
 ## Installation
 
+### Firefox
+- Install from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/reddit-advanced-user-filter/)
+
+### Development Installation
 1. Clone this repository
-2. Load the extension in your browser:
+2. Generate your `manifest.json`. This project maintains two manifest versions:
+   - `manifest-chrome.json`: Manifest V3 for Chrome Web Store
+   - `manifest-firefox.json`: Manifest V2 for Firefox Add-ons
+
+   To switch between manifests for development or testing:
+
+   ```bash
+   # For Chrome development
+   node switch-manifest.js chrome
+
+   # For Firefox development
+   node switch-manifest.js firefox
+   ```
+3. Load the extension in your browser:
    - Chrome: Go to `chrome://extensions/`, enable "Developer mode", click "Load unpacked" and select the extension directory
    - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select any file in the extension directory
+
 
 ## Configuration
 
@@ -56,22 +74,6 @@ A browser extension that filters Reddit posts based on user account age, karma, 
      - Link-to-comment karma ratio (default: 100)
    - Click "Save Options" to apply your changes
 
-### Development
-
-This extension maintains two manifest versions:
-- `manifest-chrome.json`: Manifest V3 for Chrome Web Store
-- `manifest-firefox.json`: Manifest V2 for Firefox Add-ons
-
-To switch between manifests for development or testing:
-
-```bash
-# For Chrome development
-node switch-manifest.js chrome
-
-# For Firefox development
-node switch-manifest.js firefox
-```
-
 ## Limitations
 
 Due to Reddit's API restrictions, the extension is subject to the following rate limits:
@@ -79,15 +81,6 @@ Due to Reddit's API restrictions, the extension is subject to the following rate
 - 100 queries per minute (QPM) per OAuth client ID
 - QPM limits are averaged over a 10-minute window, allowing for some request bursting
 - Due to using implicit grant flow for authentication, login tokens expire after 1 hour and require re-authentication (I know this is not ideal, but changing this would require major restructuring)
-
-## Privacy
-
-This extension:
-- Stores all data locally in your browser
-- Only makes requests to Reddit's API
-- Does not collect or transmit any personal data
-
-See [PRIVACY.md](PRIVACY.md) for more details.
 
 ## License
 
