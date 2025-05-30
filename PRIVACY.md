@@ -52,6 +52,6 @@ We may update this privacy policy from time to time. We will notify you of any c
 
 ## Contact
 
-For privacy-related questions, please contact me at [kole6393+reddit-advanced-user-filter@gmail.com] or open an issue on GitHub.
+For privacy-related questions, please contact me at [kole6393+reddit-advanced-user-filter@gmail.com] or open an issue on GitHub [https://github.com/KoleMyers/reddit-advanced-user-filter].
 
 Last updated: May 2025 

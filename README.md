@@ -56,6 +56,22 @@ A browser extension that filters Reddit posts based on user account age, karma, 
      - Link-to-comment karma ratio (default: 100)
    - Click "Save Options" to apply your changes
 
+### Development
+
+This extension maintains two manifest versions:
+- `manifest-chrome.json`: Manifest V3 for Chrome Web Store
+- `manifest-firefox.json`: Manifest V2 for Firefox Add-ons
+
+To switch between manifests for development or testing:
+
+```bash
+# For Chrome development
+node switch-manifest.js chrome
+
+# For Firefox development
+node switch-manifest.js firefox
+```
+
 ## Limitations
 
 Due to Reddit's API restrictions, the extension is subject to the following rate limits:
@@ -79,4 +95,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Author
 
-Kole Myers - [GitHub](https://github.com/kolemyers) 
+Kole Myers - [GitHub](https://github.com/kolemyers)
