@@ -58,9 +58,27 @@ function handleFetchUserData(request, sendResponse) {
     .then(async res => {
       if (!res.ok) {
         const text = await res.text();
-        sendResponse({ success: false, error: `Status ${res.status}: ${text}` });
+        console.warn(`API request failed for user ${username}:`, res.status, text);
+        
+        // Handle specific error cases
+        if (res.status === 401) {
+          // Token expired or invalid
+          chrome.storage.local.remove('reddit_token', () => {
+            console.log('Removed expired token from storage');
+          });
+          sendResponse({ success: false, error: `Status ${res.status}: Token expired or invalid` });
+        } else if (res.status === 429) {
+          // Rate limited
+          sendResponse({ 
+            success: false, 
+            error: `Status ${res.status}: Rate limited`
+          });
+        } else {
+          sendResponse({ success: false, error: `Status ${res.status}: ${text}` });
+        }
         return;
       }
+      
       const data = await res.json();
       sendResponse({ success: true, data });
     })

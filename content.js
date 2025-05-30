@@ -1,5 +1,4 @@
 const userCache = {};
-
 let userQueue = [];
 let processing = false;
 
@@ -98,8 +97,10 @@ async function fetchUserData(username) {
   if (userCache[username]) {
     return userCache[username];
   }
+
   const token = await getToken();
   if (!token) throw new Error("No access token");
+
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
       { type: "fetchUserData", username, token },
@@ -133,6 +134,9 @@ async function fetchUserData(username) {
               chrome.runtime.sendMessage({ type: "showAuthWarning" });
             } else if (response.error.includes('Status 429')) {
               chrome.runtime.sendMessage({ type: "showRateLimitWarning" });
+              // Stop processing when we hit rate limit
+              userQueue = [];
+              processing = false;
             }
           }
           reject(error);
@@ -185,12 +189,14 @@ function getPostInfo(post) {
 }
 
 async function processPost(post, username) {
+  // Small delay to help prevent rate limiting
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
   try {
     const user = await fetchUserData(username);
     const filterReason = shouldFilterUser(user);
     if (filterReason) {
       post.style.display = "none";
-      console.log(`Filtered user: ${username} (https://www.reddit.com/user/${username}) - Reason: ${filterReason}`);
       const { title, url } = getPostInfo(post);
       chrome.storage.local.get({ filteredUsers: [] }, ({ filteredUsers }) => {
         if (!filteredUsers.some(u => u.username === username && u.postUrl === url)) {
@@ -213,7 +219,6 @@ function isPostPage() {
 }
 
 function observePosts() {
-  // Support both old and new Reddit post selectors
   const posts = [
     ...document.querySelectorAll(".thing[data-author]"), // old Reddit
     ...document.querySelectorAll(".Post") // new Reddit
@@ -259,8 +264,17 @@ async function processQueue() {
   processing = true;
   while (userQueue.length > 0) {
     const { post, username } = userQueue.shift();
-    await processPost(post, username);
-    await new Promise(res => setTimeout(res, 100));
+    try {
+      await processPost(post, username);
+    } catch (err) {
+      if (err.toString().includes('Status 429')) {
+        // Stop processing immediately on rate limit
+        userQueue = [];
+        processing = false;
+        return;
+      }
+      console.warn(`Failed to process post for user ${username}:`, err);
+    }
   }
   processing = false;
 }
