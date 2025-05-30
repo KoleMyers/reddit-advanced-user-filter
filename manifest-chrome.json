@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Reddit Advanced User Filter",
+  "version": "1.0",
+  "description": "Filter Reddit posts based on user account age, karma, and other criteria",
+  "author": "Kole Myers (https://github.com/kolemyers)",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.reddit.com/*",
+    "https://example.com/*",
+    "https://oauth.reddit.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.reddit.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "minimum_chrome_version": "88",
+  "web_accessible_resources": [{
+    "resources": ["popup.html", "popup.js"],
+    "matches": ["https://*.reddit.com/*"]
+  }]
+}

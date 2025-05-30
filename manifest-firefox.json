@@ -38,11 +38,12 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "reddit-advanced-user-filter@kolemyers.github.io"
+      "id": "reddit-advanced-user-filter@kolemyers.github.io",
+      "strict_min_version": "57.0"
     }
   },
   "web_accessible_resources": [
     "popup.html",
     "popup.js"
   ]
-}
+} 
