@@ -18,8 +18,9 @@ A browser extension that filters Reddit posts based on user account age, karma, 
 
 ## Installation
 
-### Firefox
-- Install from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/reddit-advanced-user-filter/)
+Firefox: [https://addons.mozilla.org/en-US/firefox/addon/reddit-advanced-user-filter/](https://addons.mozilla.org/en-US/firefox/addon/reddit-advanced-user-filter/)
+
+Chrome: [https://chrome.google.com/webstore/detail/reddit-advanced-user-filter/anpompnkkonhjjdideilnnlpakdkhggj](https://chrome.google.com/webstore/detail/reddit-advanced-user-filter/anpompnkkonhjjdideilnnlpakdkhggj)
 
 ### Development Installation
 1. Clone this repository
