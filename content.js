@@ -253,6 +253,9 @@ function getPostInfo(post) {
 }
 
 async function processPost(post, username) {
+  // Instantly skip if post is no longer in the DOM
+  if (!document.body.contains(post)) return;
+
   // Skip comments if filterComments is false
   if (filterOptions && filterOptions.filterComments === false) {
     // Old Reddit comment
