@@ -1,6 +1,7 @@
 const userCache = {};
 let userQueue = [];
 let processing = false;
+let cachedToken = null;
 
 // Pages where filtering should be skipped
 const SKIP_FILTER_PATTERNS = [
@@ -23,7 +24,8 @@ const defaultOptions = {
   requireBothKarmaTypes: true,
   excludePremium: false,
   excludeMods: false,
-  linkKarmaRatio: 100
+  linkKarmaRatio: 100,
+  filterComments: true
 };
 
 let filterOptions = null;
@@ -31,7 +33,7 @@ let filterOptions = null;
 async function loadFilterOptions() {
   try {
     const { minAccountAgeDays, minKarma, maxKarma, requireVerifiedEmail, 
-            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio } = 
+            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio, filterComments } = 
       await chrome.storage.local.get(defaultOptions);
     
     filterOptions = {
@@ -42,7 +44,8 @@ async function loadFilterOptions() {
       requireBothKarmaTypes,
       excludePremium,
       excludeMods,
-      linkKarmaRatio
+      linkKarmaRatio,
+      filterComments
     };
     
     // Skip filtering if on a page that should not be filtered
@@ -69,8 +72,15 @@ function shouldFilterUser(user) {
   if (user.karma < filterOptions.minKarma) return `Karma too low: ${user.karma.toLocaleString()}`;
   if (user.karma > filterOptions.maxKarma) return `Karma too high: ${user.karma.toLocaleString()}`;
   if (filterOptions.requireVerifiedEmail && !user.has_verified_email) return "Email not verified";
-  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) 
-    return `Missing either link (${user.link_karma.toLocaleString()}) or comment (${user.comment_karma.toLocaleString()}) karma`;
+  if (filterOptions.requireBothKarmaTypes) {
+    if (user.link_karma === 0 && user.comment_karma === 0) {
+      return "Missing both link and comment karma";
+    } else if (user.link_karma === 0) {
+      return "Missing link karma";
+    } else if (user.comment_karma === 0) {
+      return "Missing comment karma";
+    }
+  }
   if (filterOptions.excludePremium && user.is_gold) return "Premium user";
   if (filterOptions.excludeMods && user.is_mod) return "Moderator";
   if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
@@ -87,9 +97,22 @@ function daysSince(unixTimestamp) {
 }
 
 async function getToken() {
+  if (cachedToken !== null) return cachedToken;
   const { reddit_token } = await chrome.storage.local.get("reddit_token");
+  cachedToken = reddit_token;
   return reddit_token;
 }
+
+function clearTokenCache() {
+  cachedToken = null;
+}
+
+// Listen for token changes to clear the cache
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.reddit_token) {
+    clearTokenCache();
+  }
+});
 
 async function fetchUserData(username) {
   // Check cache first
@@ -195,6 +218,21 @@ function getPostInfo(post) {
     if (oldTitleElem) url = oldTitleElem.href;
   }
 
+  // Check if it's a comment (old Reddit)
+  if (post.classList.contains('comment') && post.hasAttribute('data-permalink')) {
+    url = `https://www.reddit.com${post.getAttribute('data-permalink')}`;
+    let commentText = '';
+    const commentBody = post.querySelector('.usertext-body .md');
+    if (commentBody) {
+      commentText = commentBody.textContent.trim();
+      if (commentText.length > 100) {
+        commentText = commentText.slice(0, 100) + '…';
+      }
+    }
+    title = commentText || '[Comment]';
+    return { title, url };
+  }
+
   // Try to extract subreddit, post ID, and slug from the URL
   let commentsUrl = url;
   const match = url.match(/reddit\.com\/(r\/([^\/]+)\/)?comments\/([a-z0-9]+)(?:\/([^\/?#]+))?/i);
@@ -215,9 +253,20 @@ function getPostInfo(post) {
 }
 
 async function processPost(post, username) {
-  // Small delay to help prevent rate limiting
+  // Instantly skip if post is no longer in the DOM
+  if (!document.body.contains(post)) return;
+
+  // Skip comments if filterComments is false
+  if (filterOptions && filterOptions.filterComments === false) {
+    // Old Reddit comment
+    if (post.classList.contains('comment') && post.hasAttribute('data-permalink')) return;
+    // New Reddit comment
+    if (post.tagName === 'SHREDDIT-COMMENT') return;
+  }
+
+  // Small delay to help prevent rate limiting (only for posts that are actually processed)
   await new Promise(resolve => setTimeout(resolve, 100));
-  
+
   try {
     const user = await fetchUserData(username);
     const filterReason = shouldFilterUser(user);
