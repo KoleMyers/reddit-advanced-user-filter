@@ -216,6 +216,21 @@ function getPostInfo(post) {
     if (oldTitleElem) url = oldTitleElem.href;
   }
 
+  // Check if it's a comment (old Reddit)
+  if (post.classList.contains('comment') && post.hasAttribute('data-permalink')) {
+    url = `https://www.reddit.com${post.getAttribute('data-permalink')}`;
+    let commentText = '';
+    const commentBody = post.querySelector('.usertext-body .md');
+    if (commentBody) {
+      commentText = commentBody.textContent.trim();
+      if (commentText.length > 100) {
+        commentText = commentText.slice(0, 100) + '…';
+      }
+    }
+    title = commentText || '[Comment]';
+    return { title, url };
+  }
+
   // Try to extract subreddit, post ID, and slug from the URL
   let commentsUrl = url;
   const match = url.match(/reddit\.com\/(r\/([^\/]+)\/)?comments\/([a-z0-9]+)(?:\/([^\/?#]+))?/i);
