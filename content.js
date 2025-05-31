@@ -1,6 +1,7 @@
 const userCache = {};
 let userQueue = [];
 let processing = false;
+let cachedToken = null;
 
 // Pages where filtering should be skipped
 const SKIP_FILTER_PATTERNS = [
@@ -87,9 +88,22 @@ function daysSince(unixTimestamp) {
 }
 
 async function getToken() {
+  if (cachedToken !== null) return cachedToken;
   const { reddit_token } = await chrome.storage.local.get("reddit_token");
+  cachedToken = reddit_token;
   return reddit_token;
 }
+
+function clearTokenCache() {
+  cachedToken = null;
+}
+
+// Listen for token changes to clear the cache
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.reddit_token) {
+    clearTokenCache();
+  }
+});
 
 async function fetchUserData(username) {
   // Check cache first
