@@ -5,7 +5,6 @@ document.getElementById("login").addEventListener("click", () => {
   const clientId = document.getElementById('clientId').value;
   chrome.runtime.sendMessage({ type: "login", clientId }, (response) => {
     if (response.success) {
-      alert("Please complete login in the new tab.");
       setTimeout(() => {
         const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
         warnings.forEach(warning => {
@@ -168,7 +167,7 @@ function clearWarnings() {
   warnings.forEach(warning => {
     warning.textContent = '';
     warning.style.display = 'none';
-    warning.style.color = ERROR_COLOR; // Reset to default error color
+    warning.style.color = ERROR_COLOR;
   });
 }
 
