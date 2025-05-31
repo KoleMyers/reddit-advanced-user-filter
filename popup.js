@@ -59,7 +59,8 @@ const defaultOptions = {
   requireBothKarmaTypes: true,
   excludePremium: false,
   excludeMods: false,
-  linkKarmaRatio: 100
+  linkKarmaRatio: 100,
+  filterComments: true
 };
 
 function loadOptionsForm() {
@@ -72,6 +73,7 @@ function loadOptionsForm() {
     document.getElementById('excludePremium').checked = options.excludePremium;
     document.getElementById('excludeMods').checked = options.excludeMods;
     document.getElementById('linkKarmaRatio').value = options.linkKarmaRatio;
+    document.getElementById('filterComments').checked = options.filterComments;
   });
 }
 
@@ -84,7 +86,8 @@ function saveOptionsFromForm() {
     requireBothKarmaTypes: document.getElementById('requireBothKarmaTypes').checked,
     excludePremium: document.getElementById('excludePremium').checked,
     excludeMods: document.getElementById('excludeMods').checked,
-    linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0
+    linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0,
+    filterComments: document.getElementById('filterComments').checked
   };
   
   // Save options

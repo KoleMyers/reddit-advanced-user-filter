@@ -24,7 +24,8 @@ const defaultOptions = {
   requireBothKarmaTypes: true,
   excludePremium: false,
   excludeMods: false,
-  linkKarmaRatio: 100
+  linkKarmaRatio: 100,
+  filterComments: true
 };
 
 let filterOptions = null;
@@ -32,7 +33,7 @@ let filterOptions = null;
 async function loadFilterOptions() {
   try {
     const { minAccountAgeDays, minKarma, maxKarma, requireVerifiedEmail, 
-            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio } = 
+            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio, filterComments } = 
       await chrome.storage.local.get(defaultOptions);
     
     filterOptions = {
@@ -43,7 +44,8 @@ async function loadFilterOptions() {
       requireBothKarmaTypes,
       excludePremium,
       excludeMods,
-      linkKarmaRatio
+      linkKarmaRatio,
+      filterComments
     };
     
     // Skip filtering if on a page that should not be filtered
@@ -251,9 +253,17 @@ function getPostInfo(post) {
 }
 
 async function processPost(post, username) {
-  // Small delay to help prevent rate limiting
+  // Skip comments if filterComments is false
+  if (filterOptions && filterOptions.filterComments === false) {
+    // Old Reddit comment
+    if (post.classList.contains('comment') && post.hasAttribute('data-permalink')) return;
+    // New Reddit comment
+    if (post.tagName === 'SHREDDIT-COMMENT') return;
+  }
+
+  // Small delay to help prevent rate limiting (only for posts that are actually processed)
   await new Promise(resolve => setTimeout(resolve, 100));
-  
+
   try {
     const user = await fetchUserData(username);
     const filterReason = shouldFilterUser(user);
