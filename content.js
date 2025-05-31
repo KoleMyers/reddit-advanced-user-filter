@@ -70,8 +70,15 @@ function shouldFilterUser(user) {
   if (user.karma < filterOptions.minKarma) return `Karma too low: ${user.karma.toLocaleString()}`;
   if (user.karma > filterOptions.maxKarma) return `Karma too high: ${user.karma.toLocaleString()}`;
   if (filterOptions.requireVerifiedEmail && !user.has_verified_email) return "Email not verified";
-  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) 
-    return `Missing either link (${user.link_karma.toLocaleString()}) or comment (${user.comment_karma.toLocaleString()}) karma`;
+  if (filterOptions.requireBothKarmaTypes) {
+    if (user.link_karma === 0 && user.comment_karma === 0) {
+      return "Missing both link and comment karma";
+    } else if (user.link_karma === 0) {
+      return "Missing link karma";
+    } else if (user.comment_karma === 0) {
+      return "Missing comment karma";
+    }
+  }
   if (filterOptions.excludePremium && user.is_gold) return "Premium user";
   if (filterOptions.excludeMods && user.is_mod) return "Moderator";
   if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
