@@ -63,8 +63,10 @@ function handleFetchUserData(request, sendResponse) {
         // Handle specific error cases
         if (res.status === 401) {
           // Token expired or invalid
-          chrome.storage.local.remove('reddit_token', () => {
-            console.log('Removed expired token from storage');
+          chrome.storage.local.set({ needsAuthWarning: true }, () => {
+            chrome.storage.local.remove('reddit_token', () => {
+              console.log('Removed expired token from storage');
+            });
           });
           sendResponse({ success: false, error: `Status ${res.status}: Token expired or invalid` });
         } else if (res.status === 429) {

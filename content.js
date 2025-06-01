@@ -121,7 +121,11 @@ async function fetchUserData(username) {
   }
 
   const token = await getToken();
-  if (!token) throw new Error("No access token");
+  if (!token) {
+    chrome.storage.local.set({ needsAuthWarning: true });
+    chrome.runtime.sendMessage({ type: "showAuthWarning" });
+    throw new Error("No access token");
+  }
 
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
@@ -256,6 +260,10 @@ async function processPost(post, username) {
   // Instantly skip if post is no longer in the DOM
   if (!document.body.contains(post)) return;
 
+  // Skip if post is above the viewport
+  const rect = post.getBoundingClientRect();
+  if (rect.bottom < 0) return;
+
   // Skip comments if filterComments is false
   if (filterOptions && filterOptions.filterComments === false) {
     // Old Reddit comment
@@ -284,7 +292,12 @@ async function processPost(post, username) {
       });
     }
   } catch (err) {
-    console.warn(`Failed to process post for user ${username}:`, err);
+    // Send warning message if error is rate limit or auth related
+    if (err.message?.includes('429')) {
+      chrome.runtime.sendMessage({ type: "showRateLimitWarning" });
+    } else if (err.message?.includes('401')) {
+      chrome.runtime.sendMessage({ type: "showAuthWarning" });
+    }
   }
 }
 
@@ -352,7 +365,6 @@ async function processQueue() {
         processing = false;
         return;
       }
-      console.warn(`Failed to process post for user ${username}:`, err);
     }
   }
   processing = false;
