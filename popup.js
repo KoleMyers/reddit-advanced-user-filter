@@ -168,6 +168,7 @@ function clearWarnings() {
     warning.style.display = 'none';
     warning.style.color = ERROR_COLOR;
   });
+  chrome.storage.local.set({ needsAuthWarning: false });
 }
 
 function showClientIdWarningIfNeeded() {

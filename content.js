@@ -147,7 +147,6 @@ async function fetchUserData(username) {
               is_mod: response.data.data.is_mod
             };
             userCache[username] = userData;
-            // Clear any warnings since we got a successful response
             chrome.runtime.sendMessage({ type: "clearWarnings" });
             resolve(userData);
           } catch (err) {
