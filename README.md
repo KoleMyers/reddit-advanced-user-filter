@@ -39,7 +39,7 @@ Chrome: [https://chrome.google.com/webstore/detail/reddit-advanced-user-filter/a
    ```
 3. Load the extension in your browser:
    - Chrome: Go to `chrome://extensions/`, enable "Developer mode", click "Load unpacked" and select the extension directory
-   - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select any file in the extension directory
+   - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select your generated manifest.json 
 
 
 ## Configuration
