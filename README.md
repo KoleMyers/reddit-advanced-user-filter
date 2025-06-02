@@ -20,7 +20,7 @@ A browser extension that filters Reddit posts based on user account age, karma, 
 
 Firefox: Coming Soon
 
-Chrome: Coming Soon
+Chrome: [https://chrome.google.com/webstore/detail/reddit-advanced-user-filter/anpompnkkonhjjdideilnnlpakdkhggj](https://chrome.google.com/webstore/detail/reddit-advanced-user-filter/anpompnkkonhjjdideilnnlpakdkhggj)
 
 ### Development Installation
 1. Clone this repository
