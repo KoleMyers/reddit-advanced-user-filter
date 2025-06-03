@@ -1,10 +1,38 @@
 const ERROR_COLOR = '#ff4d4d'; 
 const WARNING_COLOR = '#ffd700';
 
+const DEFAULT_OPTIONS = {
+  minAccountAgeDays: 90,
+  minKarma: 10,
+  maxKarma: 1500000,
+  requireVerifiedEmail: false,
+  requireBothKarmaTypes: true,
+  excludePremium: false,
+  excludeMods: false,
+  linkKarmaRatio: 100,
+  filterComments: true
+};
+
+const WARNING_MESSAGES = {
+  NOT_AUTHENTICATED: {
+    text: 'You are not authenticated. Please log in via the Reddit API Config tab.',
+    color: ERROR_COLOR
+  },
+  CLIENT_ID_MISSING: {
+    text: 'Reddit App Client ID is not set. Go to the Reddit API Config tab to set it up.',
+    color: ERROR_COLOR
+  },
+  RATE_LIMIT: {
+    text: 'Rate limited by Reddit API. Please wait a few minutes before trying again.',
+    color: WARNING_COLOR
+  }
+};
+
 document.getElementById("login").addEventListener("click", () => {
   const clientId = document.getElementById('clientId').value;
   chrome.runtime.sendMessage({ type: "login", clientId }, (response) => {
     if (response.success) {
+      chrome.storage.local.set({ needsAuthWarning: false });
       setTimeout(() => {
         const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
         warnings.forEach(warning => {
@@ -50,20 +78,8 @@ function populateFilteredUsersTable() {
   });
 }
 
-// Default options
-const defaultOptions = {
-  minAccountAgeDays: 90,
-  minKarma: 10,
-  maxKarma: 1500000,
-  requireVerifiedEmail: false,
-  requireBothKarmaTypes: true,
-  excludePremium: false,
-  excludeMods: false,
-  linkKarmaRatio: 100
-};
-
 function loadOptionsForm() {
-  chrome.storage.local.get(defaultOptions, (options) => {
+  chrome.storage.local.get(DEFAULT_OPTIONS, (options) => {
     document.getElementById('minAccountAgeDays').value = options.minAccountAgeDays;
     document.getElementById('minKarma').value = options.minKarma;
     document.getElementById('maxKarma').value = options.maxKarma;
@@ -72,6 +88,7 @@ function loadOptionsForm() {
     document.getElementById('excludePremium').checked = options.excludePremium;
     document.getElementById('excludeMods').checked = options.excludeMods;
     document.getElementById('linkKarmaRatio').value = options.linkKarmaRatio;
+    document.getElementById('filterComments').checked = options.filterComments;
   });
 }
 
@@ -84,7 +101,8 @@ function saveOptionsFromForm() {
     requireBothKarmaTypes: document.getElementById('requireBothKarmaTypes').checked,
     excludePremium: document.getElementById('excludePremium').checked,
     excludeMods: document.getElementById('excludeMods').checked,
-    linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0
+    linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0,
+    filterComments: document.getElementById('filterComments').checked
   };
   
   // Save options
@@ -132,33 +150,14 @@ function loadConfigForm() {
   });
 }
 
-function showAuthWarning() {
+function displayWarning(type) {
+  const warning = WARNING_MESSAGES[type];
+  if (!warning) return;
   const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
-  warnings.forEach(warning => {
-    if (warning.id === 'clientid-warning') {
-      warning.textContent = 'Warning: Your Reddit authentication has expired. Please log in again in the Reddit API Config tab.';
-      warning.style.display = '';
-      warning.style.color = ERROR_COLOR;
-    } else if (warning.id === 'config-warning') {
-      warning.textContent = 'Your Reddit authentication has expired. Please log in again.';
-      warning.style.display = '';
-      warning.style.color = ERROR_COLOR;
-    }
-  });
-}
-
-function showRateLimitWarning() {
-  const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
-  warnings.forEach(warning => {
-    if (warning.id === 'clientid-warning') {
-      warning.textContent = 'Warning: Rate limited by Reddit API. Please wait a few minutes before trying again.';
-      warning.style.display = '';
-      warning.style.color = WARNING_COLOR;
-    } else if (warning.id === 'config-warning') {
-      warning.textContent = 'Rate limited by Reddit API. Please wait a few minutes before trying again.';
-      warning.style.display = '';
-      warning.style.color = WARNING_COLOR;
-    }
+  warnings.forEach(w => {
+    w.textContent = warning.text;
+    w.style.display = 'block';
+    w.style.color = warning.color;
   });
 }
 
@@ -169,22 +168,15 @@ function clearWarnings() {
     warning.style.display = 'none';
     warning.style.color = ERROR_COLOR;
   });
+  chrome.storage.local.set({ needsAuthWarning: false });
 }
 
 function showClientIdWarningIfNeeded() {
-  chrome.storage.local.get(["CLIENT_ID", "reddit_token"], (data) => {
-    if (!data.CLIENT_ID || !data.CLIENT_ID.trim() || !data.reddit_token) {
-      const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
-      warnings.forEach(warning => {
-        if (warning.id === 'clientid-warning') {
-          warning.textContent = 'Warning: Reddit App Client ID is not set or you are not authenticated. This extension will not work without both. Go to the Reddit API Config tab to set it up.';
-          warning.style.display = '';
-          warning.style.color = ERROR_COLOR;
-        } else if (warning.id === 'config-warning') {
-          warning.style.display = '';
-          warning.style.color = ERROR_COLOR;
-        }
-      });
+  chrome.storage.local.get(["CLIENT_ID", "reddit_token", "needsAuthWarning"], (data) => {
+    if (data.needsAuthWarning || !data.reddit_token) {
+      displayWarning('NOT_AUTHENTICATED');
+    } else if (!data.CLIENT_ID || !data.CLIENT_ID.trim()) {
+      displayWarning('CLIENT_ID_MISSING');
     } else {
       clearWarnings();
     }
@@ -202,9 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for warning messages from content script
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "showAuthWarning") {
-      showAuthWarning();
+      displayWarning('NOT_AUTHENTICATED');
     } else if (request.type === "showRateLimitWarning") {
-      showRateLimitWarning();
+      displayWarning('RATE_LIMIT');
     } else if (request.type === "clearWarnings") {
       clearWarnings();
     }
