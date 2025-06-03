@@ -342,8 +342,6 @@ const observer = new IntersectionObserver(onIntersect, {
   threshold: 0.2
 });
 
-// Start observing the document body for new posts
-observer.observe(document.body, { childList: true, subtree: true });
 
 function enqueueUser(post, username) {
   userQueue.push({ post, username });
