@@ -87,14 +87,14 @@ async function loadFilterOptions() {
   }
 }
 
-function shouldFilterUser(user) {
+function shouldFilterUser(user, username) {
   if (!filterOptions) {
     console.warn('Filter options not loaded yet');
     return null;
   }
 
   // If user is in excluded users list, never filter their posts
-  if (filterOptions.excludedUsers && filterOptions.excludedUsers.map(u => u.toLowerCase()).includes(user.username.toLowerCase())) {
+  if (filterOptions.excludedUsers && filterOptions.excludedUsers.map(u => u.toLowerCase()).includes(username.toLowerCase())) {
     return null;
   }
 
@@ -307,7 +307,7 @@ async function processPost(post, username) {
 
   try {
     const user = await fetchUserData(username);
-    const filterReason = shouldFilterUser(user);
+    const filterReason = shouldFilterUser(user, username);
     if (filterReason) {
       post.style.display = "none";
       const { title, url } = getPostInfo(post);
