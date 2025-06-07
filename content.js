@@ -38,7 +38,8 @@ const DEFAULT_OPTIONS = {
   excludeMods: false,
   linkKarmaRatio: 100,
   filterComments: true,
-  excludedSubreddits: ["iama"]
+  excludedSubreddits: ["iama"],
+  excludedUsers: []
 };
 
 let filterOptions = null;
@@ -55,7 +56,8 @@ async function loadFilterOptions() {
       excludeMods,
       linkKarmaRatio,
       filterComments,
-      excludedSubreddits
+      excludedSubreddits,
+      excludedUsers
     } = await chrome.storage.local.get(DEFAULT_OPTIONS);
 
     filterOptions = {
@@ -68,7 +70,8 @@ async function loadFilterOptions() {
       excludeMods,
       linkKarmaRatio,
       filterComments,
-      excludedSubreddits
+      excludedSubreddits,
+      excludedUsers
     };
 
     // Skip filtering if on a page that should not be filtered
@@ -87,6 +90,11 @@ async function loadFilterOptions() {
 function shouldFilterUser(user) {
   if (!filterOptions) {
     console.warn('Filter options not loaded yet');
+    return null;
+  }
+
+  // If user is in excluded users list, never filter their posts
+  if (filterOptions.excludedUsers && filterOptions.excludedUsers.map(u => u.toLowerCase()).includes(user.username.toLowerCase())) {
     return null;
   }
 

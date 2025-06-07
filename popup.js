@@ -11,7 +11,8 @@ const DEFAULT_OPTIONS = {
   excludeMods: false,
   linkKarmaRatio: 100,
   filterComments: true,
-  excludedSubreddits: ["iama"]
+  excludedSubreddits: ["iama"],
+  excludedUsers: []
 };
 
 const WARNING_MESSAGES = {
@@ -91,6 +92,7 @@ function loadOptionsForm() {
     document.getElementById('linkKarmaRatio').value = options.linkKarmaRatio;
     document.getElementById('filterComments').checked = options.filterComments;
     document.getElementById('excludedSubreddits').value = (options.excludedSubreddits || []).join(', ');
+    document.getElementById('excludedUsers').value = (options.excludedUsers || []).join(', ');
   });
 }
 
@@ -106,6 +108,10 @@ function saveOptionsFromForm() {
     linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0,
     filterComments: document.getElementById('filterComments').checked,
     excludedSubreddits: document.getElementById('excludedSubreddits').value
+      .split(/[,\n]/)
+      .map(s => s.trim())
+      .filter(Boolean),
+    excludedUsers: document.getElementById('excludedUsers').value
       .split(/[,\n]/)
       .map(s => s.trim())
       .filter(Boolean)

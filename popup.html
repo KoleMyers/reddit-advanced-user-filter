@@ -9,10 +9,10 @@
         font-family: system-ui, sans-serif;
         margin: 0;
         padding: 8px;
-        width: 550px;
+        width: 700px;
         min-width: 550px;
-        max-width: 550px;
-        max-height: 600px;
+        max-width: 700px;
+        max-height: 700px;
         overflow-y: auto;
       }
       .tabs {
@@ -63,6 +63,22 @@
         border-radius: 4px;
       }
       button:hover { background: #333; }
+      #save-options, #login {
+        background: #1a73e8;
+        color: white;
+        font-weight: bold;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        margin-top: 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        width: 200px;
+        display: block;
+      }
+      #save-options:hover, #login:hover {
+        background: #1557b0;
+      }
       .options-grid {
         display: flex;
         flex-direction: column;
@@ -110,9 +126,10 @@
         font-size: 12px;
       }
       .warning-text {
-        color: #ffd700;
+        font-style: italic;
         margin: 8px 0;
-        font-size: 13px;
+        font-size: 11px;
+        color: #bbb;
       }
       .config-info {
         margin-top: 16px;
@@ -136,7 +153,7 @@
         padding: 2px 4px;
         border-radius: 3px;
       }
-      #excludedSubreddits {
+      #excludedSubreddits, #excludedUsers {
         width: 100%;
         min-width: 300px;
         min-height: 32px;
@@ -144,11 +161,11 @@
         box-sizing: border-box;
         margin-left: 0;
       }
-      label[for="excludedSubreddits"] {
+      label[for="excludedSubreddits"], label[for="excludedUsers"] {
         font-size: 14px;
       }
       .help-text {
-        font-size: 12px;
+        font-size: 11px;
         font-style: italic;
         color: #bbb;
         margin-top: 2px;
@@ -220,8 +237,8 @@
           </div>
           <div class="option-row">
             <div class="option-label-group">
-              <label for="linkKarmaRatio">Maximum Link/Comment Karma Ratio</label>
-              <span class="help-text">0 to disable</span>
+              <label for="linkKarmaRatio">Maximum Link to Comment Karma Ratio</label>
+              <span class="help-text">Filter users whose Link karma exceeds their Comment karma by this multiplier. Set to 0 to disable.</span>
             </div>
             <input type="number" id="linkKarmaRatio" min="0" step="1">
           </div>
@@ -232,9 +249,16 @@
           <div class="option-row">
             <div class="option-label-group">
               <label for="excludedSubreddits">Exclude Subreddits</label>
-              <span class="help-text">Comma or newline separated, case-insensitive (e.g. <i>iama, askreddit</i>)</span>
+              <span class="help-text">These subreddits will not be filtered. Comma or newline separated, case-insensitive (e.g. <i>iama, askreddit</i>)</span>
             </div>
             <textarea id="excludedSubreddits" placeholder="iama,askreddit"></textarea>
+          </div>
+          <div class="option-row">
+            <div class="option-label-group">
+              <label for="excludedUsers">Exclude Users</label>
+              <span class="help-text">Posts made by these users will not be filtered. Comma or newline separated, case-insensitive (e.g. <i>Here_Comes_The_King, GovSchwarzenegger</i>)</span>
+            </div>
+            <textarea id="excludedUsers" placeholder="Here_Comes_The_King, GovSchwarzenegger"></textarea>
           </div>
         </div>
         <div class="warning-text">
