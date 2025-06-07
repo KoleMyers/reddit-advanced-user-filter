@@ -1,5 +1,4 @@
-let REDIRECT_URI = 'https://example.com/reddit_oauth';
-
+const REDIRECT_URI = 'https://example.com/reddit_oauth';
 const SCOPES = "identity read";
 const STATE = Math.random().toString(36).substring(7);
 
