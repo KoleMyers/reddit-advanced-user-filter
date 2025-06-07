@@ -3,20 +3,32 @@ let userQueue = [];
 let processing = false;
 let cachedToken = null;
 
-// Pages where filtering should be skipped
 const SKIP_FILTER_PATTERNS = [
-  /\/user\//,           // User profile pages
-  /\/message\//,        // Messages
-  /\/modmail\//,        // Modmail
-  /\/chat\//,           // Chat
+  /\/user\//,
+  /\/message\//,
+  /\/modmail\//,
+  /\/chat\//,
 ];
 
+function getCurrentSubreddit() {
+  const match = window.location.pathname.match(/\/r\/([^\/]+)/);
+  return match ? match[1].toLowerCase() : null;
+}
+
 function shouldSkipFiltering() {
+  if (!filterOptions) return false;
+  const subreddit = getCurrentSubreddit();
+  if (
+    filterOptions.excludedSubreddits &&
+    subreddit &&
+    filterOptions.excludedSubreddits.map(s => s.toLowerCase()).includes(subreddit)
+  ) {
+    return true;
+  }
   return SKIP_FILTER_PATTERNS.some(pattern => pattern.test(window.location.pathname));
 }
 
-// Default options
-const defaultOptions = {
+const DEFAULT_OPTIONS = {
   minAccountAgeDays: 90,
   minKarma: 10,
   maxKarma: 1500000,
@@ -25,17 +37,27 @@ const defaultOptions = {
   excludePremium: false,
   excludeMods: false,
   linkKarmaRatio: 100,
-  filterComments: true
+  filterComments: true,
+  excludedSubreddits: ["iama"]
 };
 
 let filterOptions = null;
 
 async function loadFilterOptions() {
   try {
-    const { minAccountAgeDays, minKarma, maxKarma, requireVerifiedEmail, 
-            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio, filterComments } = 
-      await chrome.storage.local.get(defaultOptions);
-    
+    const {
+      minAccountAgeDays,
+      minKarma,
+      maxKarma,
+      requireVerifiedEmail,
+      requireBothKarmaTypes,
+      excludePremium,
+      excludeMods,
+      linkKarmaRatio,
+      filterComments,
+      excludedSubreddits
+    } = await chrome.storage.local.get(DEFAULT_OPTIONS);
+
     filterOptions = {
       minAccountAgeDays,
       minKarma,
@@ -45,9 +67,10 @@ async function loadFilterOptions() {
       excludePremium,
       excludeMods,
       linkKarmaRatio,
-      filterComments
+      filterComments,
+      excludedSubreddits
     };
-    
+
     // Skip filtering if on a page that should not be filtered
     if (shouldSkipFiltering()) {
       return;
@@ -177,13 +200,13 @@ function getUsernameFromPost(post) {
     const author = post.getAttribute('author');
     if (author) return author;
   }
-  
+
   // Try old Reddit
   const author = post.getAttribute('data-author');
   if (author) {
     return author;
   }
-  
+
   // Try new Reddit (alternative format)
   const authorElem = post.querySelector('a.author[href*="/user/"]');
   if (authorElem) {

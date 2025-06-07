@@ -10,7 +10,8 @@ const DEFAULT_OPTIONS = {
   excludePremium: false,
   excludeMods: false,
   linkKarmaRatio: 100,
-  filterComments: true
+  filterComments: true,
+  excludedSubreddits: ["iama"]
 };
 
 const WARNING_MESSAGES = {
@@ -89,6 +90,7 @@ function loadOptionsForm() {
     document.getElementById('excludeMods').checked = options.excludeMods;
     document.getElementById('linkKarmaRatio').value = options.linkKarmaRatio;
     document.getElementById('filterComments').checked = options.filterComments;
+    document.getElementById('excludedSubreddits').value = (options.excludedSubreddits || []).join(', ');
   });
 }
 
@@ -102,7 +104,11 @@ function saveOptionsFromForm() {
     excludePremium: document.getElementById('excludePremium').checked,
     excludeMods: document.getElementById('excludeMods').checked,
     linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0,
-    filterComments: document.getElementById('filterComments').checked
+    filterComments: document.getElementById('filterComments').checked,
+    excludedSubreddits: document.getElementById('excludedSubreddits').value
+      .split(/[,\n]/)
+      .map(s => s.trim())
+      .filter(Boolean)
   };
   
   // Save options

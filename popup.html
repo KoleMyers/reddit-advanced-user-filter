@@ -70,8 +70,7 @@
         margin-bottom: 8px;
       }
       .option-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
+        display: flex;
         align-items: center;
         padding: 4px 0 4px 8px;
       }
@@ -81,12 +80,21 @@
       .option-row:nth-child(even) {
         background: #292929;
       }
+      .option-label-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 180px;
+        max-width: 220px;
+      }
       .options-grid label {
         justify-self: start;
         font-size: 14px;
       }
-      .options-grid input[type="number"] {
-        width: 80px;
+      .options-grid input[type="number"],
+      .options-grid input[type="checkbox"],
+      .options-grid textarea {
+        margin-left: auto;
+        align-self: center;
       }
       #config-form .option-row {
         margin-bottom: 10px;
@@ -128,6 +136,24 @@
         padding: 2px 4px;
         border-radius: 3px;
       }
+      #excludedSubreddits {
+        width: 100%;
+        min-width: 300px;
+        min-height: 32px;
+        font-size: 14px;
+        box-sizing: border-box;
+        margin-left: 0;
+      }
+      label[for="excludedSubreddits"] {
+        font-size: 14px;
+      }
+      .help-text {
+        font-size: 12px;
+        font-style: italic;
+        color: #bbb;
+        margin-top: 2px;
+        display: block;
+      }
     </style>
   </head>
   <body>
@@ -155,40 +181,53 @@
       <form id="options-form">
         <div class="options-grid">
           <div class="option-row">
-            <label for="minAccountAgeDays">Minimum account age (days)</label>
+            <div class="option-label-group">
+              <label for="minAccountAgeDays">Minimum Account Age</label>
+              <span class="help-text">In days</span>
+            </div>
             <input type="number" id="minAccountAgeDays" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="minKarma">Minimum karma</label>
+            <label for="minKarma">Minimum Karma</label>
             <input type="number" id="minKarma" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="maxKarma">Maximum karma</label>
+            <label for="maxKarma">Maximum Karma</label>
             <input type="number" id="maxKarma" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="requireVerifiedEmail">Require verified email</label>
+            <label for="requireVerifiedEmail">Require Verified Email</label>
             <input type="checkbox" id="requireVerifiedEmail">
           </div>
           <div class="option-row">
-            <label for="requireBothKarmaTypes">Require both post and comment karma</label>
+            <label for="requireBothKarmaTypes">Require Post and Comment Karma</label>
             <input type="checkbox" id="requireBothKarmaTypes">
           </div>
           <div class="option-row">
-            <label for="excludePremium">Exclude premium users</label>
+            <label for="excludePremium">Exclude Premium Users</label>
             <input type="checkbox" id="excludePremium">
           </div>
           <div class="option-row">
-            <label for="excludeMods">Exclude moderators</label>
+            <label for="excludeMods">Exclude Moderators</label>
             <input type="checkbox" id="excludeMods">
           </div>
           <div class="option-row">
-            <label for="linkKarmaRatio">Maximum Link/Comment karma ratio (0 to disable)</label>
+            <div class="option-label-group">
+              <label for="linkKarmaRatio">Maximum Link/Comment Karma Ratio</label>
+              <span class="help-text">0 to disable</span>
+            </div>
             <input type="number" id="linkKarmaRatio" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="filterComments">Filter comments</label>
+            <label for="filterComments">Filter Comments</label>
             <input type="checkbox" id="filterComments">
+          </div>
+          <div class="option-row">
+            <div class="option-label-group">
+              <label for="excludedSubreddits">Exclude Subreddits</label>
+              <span class="help-text">Comma or newline separated, case-insensitive (e.g. <i>iama, askreddit</i>)</span>
+            </div>
+            <textarea id="excludedSubreddits" placeholder="iama,askreddit"></textarea>
           </div>
         </div>
         <div class="warning-text">
