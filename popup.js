@@ -119,6 +119,12 @@ function saveOptionsFromForm() {
         reddit_token: data.reddit_token,
         CLIENT_ID: data.CLIENT_ID
       }, () => {
+        const saveSuccess = document.getElementById('save-success');
+        saveSuccess.style.display = 'block';
+        setTimeout(() => {
+          saveSuccess.style.display = 'none';
+        }, 1000);
+
         // Notify content script to clear cache and reload
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]) {

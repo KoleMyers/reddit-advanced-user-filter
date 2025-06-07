@@ -154,6 +154,13 @@
         margin-top: 2px;
         display: block;
       }
+      #save-success {
+        color: #00ff00;
+        font-style: italic;
+        margin: 8px 0;
+        font-size: 14px;
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -233,6 +240,7 @@
         <div class="warning-text">
           Warning: Saving new options will clear your filtered users cache and re-filter all visible posts.
         </div>
+        <div id="save-success">Saved</div>
         <button type="button" id="save-options">Save Options</button>
       </form>
     </div>
