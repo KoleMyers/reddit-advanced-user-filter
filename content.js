@@ -19,9 +19,9 @@ function shouldSkipFiltering() {
   if (!filterOptions) return false;
   const subreddit = getCurrentSubreddit();
   if (
-    filterOptions.excludedSubreddits &&
+    filterOptions.whitelistedSubreddits &&
     subreddit &&
-    filterOptions.excludedSubreddits.map(s => s.toLowerCase()).includes(subreddit)
+    filterOptions.whitelistedSubreddits.map(s => s.toLowerCase()).includes(subreddit)
   ) {
     return true;
   }
@@ -38,8 +38,8 @@ const DEFAULT_OPTIONS = {
   excludeMods: false,
   linkKarmaRatio: 100,
   filterComments: true,
-  excludedSubreddits: ["iama"],
-  excludedUsers: []
+  whitelistedSubreddits: ["iama"],
+  whitelistedUsers: []
 };
 
 let filterOptions = null;
@@ -56,8 +56,8 @@ async function loadFilterOptions() {
       excludeMods,
       linkKarmaRatio,
       filterComments,
-      excludedSubreddits,
-      excludedUsers
+      whitelistedSubreddits,
+      whitelistedUsers
     } = await chrome.storage.local.get(DEFAULT_OPTIONS);
 
     filterOptions = {
@@ -70,8 +70,8 @@ async function loadFilterOptions() {
       excludeMods,
       linkKarmaRatio,
       filterComments,
-      excludedSubreddits,
-      excludedUsers
+      whitelistedSubreddits,
+      whitelistedUsers
     };
 
     // Skip filtering if on a page that should not be filtered
@@ -93,8 +93,8 @@ function shouldFilterUser(user, username) {
     return null;
   }
 
-  // If user is in excluded users list, never filter their posts
-  if (filterOptions.excludedUsers && filterOptions.excludedUsers.map(u => u.toLowerCase()).includes(username.toLowerCase())) {
+  // If user is in whitelisted users list, never filter their posts
+  if (filterOptions.whitelistedUsers && filterOptions.whitelistedUsers.map(u => u.toLowerCase()).includes(username.toLowerCase())) {
     return null;
   }
 
@@ -401,9 +401,10 @@ async function processQueue() {
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "clearCacheAndReload") {
-    // Clear the user cache
     Object.keys(userCache).forEach(key => delete userCache[key]);
-    // Reload filter options
+    loadFilterOptions();
+  } else if (request.type === "clearUserFromCache") {
+    delete userCache[request.username];
     loadFilterOptions();
   }
 });

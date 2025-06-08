@@ -11,8 +11,8 @@ const DEFAULT_OPTIONS = {
   excludeMods: false,
   linkKarmaRatio: 100,
   filterComments: true,
-  excludedSubreddits: ["iama"],
-  excludedUsers: []
+  whitelistedSubreddits: ["iama"],
+  whitelistedUsers: []
 };
 
 const WARNING_MESSAGES = {
@@ -48,8 +48,41 @@ document.getElementById("login").addEventListener("click", () => {
   });
 });
 
+function addUserToExcludedList(username) {
+  chrome.storage.local.get(DEFAULT_OPTIONS, (options) => {
+    const whitelistedUsers = options.whitelistedUsers || [];
+    if (!whitelistedUsers.includes(username)) {
+      whitelistedUsers.push(username);
+      chrome.storage.local.set({ whitelistedUsers }, () => {
+        document.getElementById('whitelistedUsers').value = whitelistedUsers.join(', ');
+        // Notify content script to clear this user from cache
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              type: "clearUserFromCache",
+              username: username 
+            });
+          }
+        });
+        populateFilteredUsersTable();
+      });
+    }
+  });
+}
+
+function removeUserFromWhitelist(username) {
+  chrome.storage.local.get(DEFAULT_OPTIONS, (options) => {
+    const whitelistedUsers = options.whitelistedUsers || [];
+    const newWhitelistedUsers = whitelistedUsers.filter(u => u !== username);
+    chrome.storage.local.set({ whitelistedUsers: newWhitelistedUsers }, () => {
+      document.getElementById('whitelistedUsers').value = newWhitelistedUsers.join(', ');
+      populateFilteredUsersTable();
+    });
+  });
+}
+
 function populateFilteredUsersTable() {
-  chrome.storage.local.get({ filteredUsers: [] }, ({ filteredUsers }) => {
+  chrome.storage.local.get({ filteredUsers: [], whitelistedUsers: [] }, ({ filteredUsers, whitelistedUsers }) => {
     const tbody = document.querySelector("#filtered-users-table tbody");
     tbody.innerHTML = "";
     filteredUsers.forEach(user => {
@@ -57,12 +90,16 @@ function populateFilteredUsersTable() {
       const tdUser = document.createElement("td");
       const tdReason = document.createElement("td");
       const tdPost = document.createElement("td");
+      const tdAction = document.createElement("td");
+      
       const a = document.createElement("a");
       a.href = user.url;
       a.textContent = user.username;
       a.target = "_blank";
       tdUser.appendChild(a);
+      
       tdReason.textContent = user.reason;
+      
       if (user.postUrl) {
         const postLink = document.createElement("a");
         postLink.href = user.postUrl;
@@ -72,9 +109,24 @@ function populateFilteredUsersTable() {
       } else {
         tdPost.textContent = "-";
       }
+
+      const whitelistBtn = document.createElement("button");
+      const isWhitelisted = whitelistedUsers.includes(user.username);
+      if (isWhitelisted) {
+        whitelistBtn.textContent = "Blacklist User";
+        whitelistBtn.className = "blacklist-user-button";
+        whitelistBtn.addEventListener("click", () => removeUserFromWhitelist(user.username));
+      } else {
+        whitelistBtn.textContent = "Whitelist User";
+        whitelistBtn.className = "whitelist-user-button";
+        whitelistBtn.addEventListener("click", () => addUserToExcludedList(user.username));
+      }
+      tdAction.appendChild(whitelistBtn);
+      
       tr.appendChild(tdUser);
       tr.appendChild(tdReason);
       tr.appendChild(tdPost);
+      tr.appendChild(tdAction);
       tbody.appendChild(tr);
     });
   });
@@ -91,8 +143,8 @@ function loadOptionsForm() {
     document.getElementById('excludeMods').checked = options.excludeMods;
     document.getElementById('linkKarmaRatio').value = options.linkKarmaRatio;
     document.getElementById('filterComments').checked = options.filterComments;
-    document.getElementById('excludedSubreddits').value = (options.excludedSubreddits || []).join(', ');
-    document.getElementById('excludedUsers').value = (options.excludedUsers || []).join(', ');
+    document.getElementById('whitelistedSubreddits').value = (options.whitelistedSubreddits || []).join(', ');
+    document.getElementById('whitelistedUsers').value = (options.whitelistedUsers || []).join(', ');
   });
 }
 
@@ -107,11 +159,11 @@ function saveOptionsFromForm() {
     excludeMods: document.getElementById('excludeMods').checked,
     linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0,
     filterComments: document.getElementById('filterComments').checked,
-    excludedSubreddits: document.getElementById('excludedSubreddits').value
+    whitelistedSubreddits: document.getElementById('whitelistedSubreddits').value
       .split(/[,\n]/)
       .map(s => s.trim())
       .filter(Boolean),
-    excludedUsers: document.getElementById('excludedUsers').value
+    whitelistedUsers: document.getElementById('whitelistedUsers').value
       .split(/[,\n]/)
       .map(s => s.trim())
       .filter(Boolean)

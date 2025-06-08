@@ -153,15 +153,15 @@
         padding: 2px 4px;
         border-radius: 3px;
       }
-      #excludedSubreddits, #excludedUsers {
+      #whitelistedSubreddits, #whitelistedUsers {
         width: 100%;
         min-width: 300px;
         min-height: 32px;
-        font-size: 14px;
+        font-size: 10px;
         box-sizing: border-box;
         margin-left: 0;
       }
-      label[for="excludedSubreddits"], label[for="excludedUsers"] {
+      label[for="whitelistedSubreddits"], label[for="whitelistedUsers"] {
         font-size: 14px;
       }
       .help-text {
@@ -177,6 +177,37 @@
         margin: 8px 0;
         font-size: 14px;
         display: none;
+      }
+      .whitelist-user-button {
+        background: #1a73e8;
+        color: white;
+        border: none;
+        white-space: nowrap;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+      .whitelist-user-button:not(:disabled):hover {
+        background: #1557b0;
+      }
+      .blacklist-user-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+      .blacklist-user-button:hover {
+        background: #bb2d3b;
       }
     </style>
   </head>
@@ -194,6 +225,7 @@
             <th>Username</th>
             <th>Reason</th>
             <th>Post</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -248,17 +280,17 @@
           </div>
           <div class="option-row">
             <div class="option-label-group">
-              <label for="excludedSubreddits">Exclude Subreddits</label>
+              <label for="whitelistedSubreddits">Whitelisted Subreddits</label>
               <span class="help-text">These subreddits will not be filtered. Comma or newline separated, case-insensitive (e.g. <i>iama, askreddit</i>)</span>
             </div>
-            <textarea id="excludedSubreddits" placeholder="iama,askreddit"></textarea>
+            <textarea id="whitelistedSubreddits" placeholder="iama,askreddit"></textarea>
           </div>
           <div class="option-row">
             <div class="option-label-group">
-              <label for="excludedUsers">Exclude Users</label>
-              <span class="help-text">Posts made by these users will not be filtered. Comma or newline separated, case-insensitive (e.g. <i>Here_Comes_The_King, GovSchwarzenegger</i>)</span>
+              <label for="whitelistedUsers">Whitelisted Users</label>
+              <span class="help-text">Posts made by these users will not be filtered. Comma or newline separated, case-insensitive</span>
             </div>
-            <textarea id="excludedUsers" placeholder="Here_Comes_The_King, GovSchwarzenegger"></textarea>
+            <textarea id="whitelistedUsers" placeholder="Here_Comes_The_King, GovSchwarzenegger"></textarea>
           </div>
         </div>
         <div class="warning-text">
