@@ -115,7 +115,7 @@ function shouldFilterUser(user, username) {
   if (filterOptions.excludePremium && user.is_gold) return "Premium user";
   if (filterOptions.excludeMods && user.is_mod) return "Moderator";
   if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
-    return `Link/Comment karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
+    return `Karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
   }
   return null;
 }
