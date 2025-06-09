@@ -302,9 +302,6 @@ async function processPost(post, username) {
     if (post.tagName === 'SHREDDIT-COMMENT') return;
   }
 
-  // Small delay to help prevent rate limiting (only for posts that are actually processed)
-  await new Promise(resolve => setTimeout(resolve, 100));
-
   try {
     const user = await fetchUserData(username);
     const filterReason = shouldFilterUser(user, username);
