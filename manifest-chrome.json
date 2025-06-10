@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reddit Advanced User Filter",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Filter Reddit posts based on user account age, karma, and other criteria",
   "author": "Kole Myers (https://github.com/kolemyers)",
   "permissions": [
