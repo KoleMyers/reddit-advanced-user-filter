@@ -9,10 +9,10 @@
         font-family: system-ui, sans-serif;
         margin: 0;
         padding: 8px;
-        width: 550px;
+        width: 700px;
         min-width: 550px;
-        max-width: 550px;
-        max-height: 600px;
+        max-width: 700px;
+        max-height: 700px;
         overflow-y: auto;
       }
       .tabs {
@@ -55,8 +55,30 @@
         background: #222;
       }
       a { color: #aad7ff; }
-      button { background: #222; color: #f5f5f5; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; }
+      button { 
+        background: #222;
+        color: #f5f5f5;
+        border: 1px solid #444;
+        padding: 6px 12px;
+        border-radius: 4px;
+      }
       button:hover { background: #333; }
+      #save-options, #login {
+        background: #1a73e8;
+        color: white;
+        font-weight: bold;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        margin-top: 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        width: 200px;
+        display: block;
+      }
+      #save-options:hover, #login:hover {
+        background: #1557b0;
+      }
       .options-grid {
         display: flex;
         flex-direction: column;
@@ -64,8 +86,7 @@
         margin-bottom: 8px;
       }
       .option-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
+        display: flex;
         align-items: center;
         padding: 4px 0 4px 8px;
       }
@@ -75,15 +96,122 @@
       .option-row:nth-child(even) {
         background: #292929;
       }
+      .option-label-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 180px;
+        max-width: 220px;
+      }
       .options-grid label {
         justify-self: start;
         font-size: 14px;
       }
-      .options-grid input[type="number"] {
-        width: 80px;
+      .options-grid input[type="number"],
+      .options-grid input[type="checkbox"],
+      .options-grid textarea {
+        margin-left: auto;
+        align-self: center;
       }
       #config-form .option-row {
         margin-bottom: 10px;
+      }
+      #clientid-warning, #config-warning {
+        color: #ff4d4d;
+        font-weight: bold;
+        margin-bottom: 8px;
+        display: none;
+      }
+      #filtered-users-table {
+        width: 100%;
+        font-size: 12px;
+      }
+      #filtered-users-table th:nth-child(2),
+      #filtered-users-table td:nth-child(2) {
+        width: 18%;
+      }
+      .warning-text {
+        font-style: italic;
+        margin: 8px 0;
+        font-size: 11px;
+        color: #bbb;
+      }
+      .config-info {
+        margin-top: 16px;
+        font-size: 13px;
+      }
+      .config-form-input {
+        width: 220px;
+      }
+      .config-form-label {
+        margin-right: 8px;
+      }
+      .config-form-button {
+        margin-top: 0;
+      }
+      .config-form-row {
+        margin-bottom: 10px;
+      }
+      .config-form-code {
+        font-family: monospace;
+        background: #222;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      #whitelistedSubreddits, #whitelistedUsers {
+        width: 100%;
+        min-width: 300px;
+        min-height: 32px;
+        font-size: 10px;
+        box-sizing: border-box;
+        margin-left: 0;
+      }
+      label[for="whitelistedSubreddits"], label[for="whitelistedUsers"] {
+        font-size: 14px;
+      }
+      .help-text {
+        font-size: 11px;
+        font-style: italic;
+        color: #bbb;
+        margin-top: 2px;
+        display: block;
+      }
+      #save-success {
+        color: #00ff00;
+        font-style: italic;
+        margin: 8px 0;
+        font-size: 14px;
+        display: none;
+      }
+      .whitelist-user-button {
+        background: #1a73e8;
+        color: white;
+        border: none;
+        white-space: nowrap;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+      .whitelist-user-button:not(:disabled):hover {
+        background: #1557b0;
+      }
+      .blacklist-user-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+      }
+      .blacklist-user-button:hover {
+        background: #bb2d3b;
       }
     </style>
   </head>
@@ -94,13 +222,14 @@
       <div class="tab" id="tab-config">Reddit API Config</div>
     </div>
     <div class="tab-content active" id="content-posts">
-      <div id="clientid-warning" style="display:none; color:#ff4d4d; font-weight:bold; margin-bottom:8px;"></div>
-      <table id="filtered-users-table" border="1" style="width:100%; font-size:12px;">
+      <div id="clientid-warning"></div>
+      <table id="filtered-users-table" border="1">
         <thead>
           <tr>
             <th>Username</th>
             <th>Reason</th>
             <th>Post</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -112,56 +241,81 @@
       <form id="options-form">
         <div class="options-grid">
           <div class="option-row">
-            <label for="minAccountAgeDays">Minimum account age (days)</label>
+            <div class="option-label-group">
+              <label for="minAccountAgeDays">Minimum Account Age</label>
+              <span class="help-text">In days</span>
+            </div>
             <input type="number" id="minAccountAgeDays" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="minKarma">Minimum karma</label>
+            <label for="minKarma">Minimum Karma</label>
             <input type="number" id="minKarma" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="maxKarma">Maximum karma</label>
+            <label for="maxKarma">Maximum Karma</label>
             <input type="number" id="maxKarma" min="0" step="1">
           </div>
           <div class="option-row">
-            <label for="requireVerifiedEmail">Require verified email</label>
+            <label for="requireVerifiedEmail">Require Verified Email</label>
             <input type="checkbox" id="requireVerifiedEmail">
           </div>
           <div class="option-row">
-            <label for="requireBothKarmaTypes">Require both post and comment karma</label>
+            <label for="requireBothKarmaTypes">Require Post and Comment Karma</label>
             <input type="checkbox" id="requireBothKarmaTypes">
           </div>
           <div class="option-row">
-            <label for="excludePremium">Exclude premium users</label>
+            <label for="excludePremium">Exclude Premium Users</label>
             <input type="checkbox" id="excludePremium">
           </div>
           <div class="option-row">
-            <label for="excludeMods">Exclude moderators</label>
+            <label for="excludeMods">Exclude Moderators</label>
             <input type="checkbox" id="excludeMods">
           </div>
           <div class="option-row">
-            <label for="linkKarmaRatio">Link/Comment karma ratio (0 to disable)</label>
+            <div class="option-label-group">
+              <label for="linkKarmaRatio">Maximum Link to Comment Karma Ratio</label>
+              <span class="help-text">Filter users whose Link karma exceeds their Comment karma by this multiplier. Set to 0 to disable.</span>
+            </div>
             <input type="number" id="linkKarmaRatio" min="0" step="1">
           </div>
+          <div class="option-row">
+            <label for="filterComments">Filter Comments</label>
+            <input type="checkbox" id="filterComments">
+          </div>
+          <div class="option-row">
+            <div class="option-label-group">
+              <label for="whitelistedSubreddits">Whitelisted Subreddits</label>
+              <span class="help-text">These subreddits will not be filtered. Comma or newline separated, case-insensitive (e.g. <i>iama, askreddit</i>)</span>
+            </div>
+            <textarea id="whitelistedSubreddits" placeholder="iama,askreddit"></textarea>
+          </div>
+          <div class="option-row">
+            <div class="option-label-group">
+              <label for="whitelistedUsers">Whitelisted Users</label>
+              <span class="help-text">Posts made by these users will not be filtered. Comma or newline separated, case-insensitive</span>
+            </div>
+            <textarea id="whitelistedUsers" placeholder="Here_Comes_The_King, GovSchwarzenegger"></textarea>
+          </div>
         </div>
-        <div style="color: #ffd700; margin: 8px 0; font-size: 13px;">
+        <div class="warning-text">
           Warning: Saving new options will clear your filtered users cache and re-filter all visible posts.
         </div>
-        <button type="button" id="save-options" style="margin-top: 8px;">Save Options</button>
+        <div id="save-success">Saved</div>
+        <button type="button" id="save-options">Save Options</button>
       </form>
     </div>
     <div class="tab-content" id="content-config">
-      <div id="config-warning" style="color:#ff4d4d; font-weight:bold; margin-bottom:8px;">
+      <div id="config-warning">
         <b>Required:</b> You must set your Reddit App Client ID and authenticate (click the login button and allow access) before the filter will work.
       </div>
       <form id="config-form">
-        <div class="option-row">
-          <label for="clientId">Reddit App Client ID</label>
-          <input type="text" id="clientId" autocomplete="off" style="width: 220px;">
+        <div class="option-row config-form-row">
+          <label for="clientId" class="config-form-label">Reddit App Client ID</label>
+          <input type="text" id="clientId" autocomplete="off" class="config-form-input">
         </div>
-        <button id="login" type="button">Login with Reddit</button>
+        <button id="login" type="button" class="config-form-button">Login with Reddit</button>
       </form>
-      <div style="margin-top: 16px; font-size: 13px;">
+      <div class="config-info">
         <strong>How to create a Reddit app:</strong>
         <ol style="margin-top: 4px; margin-bottom: 8px;">
           <li>Go to <a href="https://www.reddit.com/prefs/apps" target="_blank">https://www.reddit.com/prefs/apps</a></li>
@@ -169,7 +323,7 @@
           <li>Fill in the following details:<br>
             &nbsp;&nbsp;- <b>Name:</b> Any name you like<br>
             &nbsp;&nbsp;- <b>Type:</b> <b>installed app</b><br>
-            &nbsp;&nbsp;- <b>Redirect URI:</b> <code>https://example.com/reddit_oauth</code>
+            &nbsp;&nbsp;- <b>Redirect URI:</b> <span class="config-form-code">https://example.com/reddit_oauth</span>
           </li>
           <li>Click <b>create app</b></li>
           <li>Copy the <b>client ID</b> (the 14-character string under "installed app") and paste it above</li>

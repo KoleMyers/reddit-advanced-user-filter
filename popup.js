@@ -1,10 +1,40 @@
 const ERROR_COLOR = '#ff4d4d'; 
 const WARNING_COLOR = '#ffd700';
 
+const DEFAULT_OPTIONS = {
+  minAccountAgeDays: 90,
+  minKarma: 10,
+  maxKarma: 1500000,
+  requireVerifiedEmail: false,
+  requireBothKarmaTypes: true,
+  excludePremium: false,
+  excludeMods: false,
+  linkKarmaRatio: 100,
+  filterComments: true,
+  whitelistedSubreddits: ["iama"],
+  whitelistedUsers: []
+};
+
+const WARNING_MESSAGES = {
+  NOT_AUTHENTICATED: {
+    text: 'You are not authenticated. Please log in via the Reddit API Config tab.',
+    color: ERROR_COLOR
+  },
+  CLIENT_ID_MISSING: {
+    text: 'Reddit App Client ID is not set. Go to the Reddit API Config tab to set it up.',
+    color: ERROR_COLOR
+  },
+  RATE_LIMIT: {
+    text: 'Rate limited by Reddit API. Please wait a few minutes before trying again.',
+    color: WARNING_COLOR
+  }
+};
+
 document.getElementById("login").addEventListener("click", () => {
   const clientId = document.getElementById('clientId').value;
   chrome.runtime.sendMessage({ type: "login", clientId }, (response) => {
     if (response.success) {
+      chrome.storage.local.set({ needsAuthWarning: false });
       setTimeout(() => {
         const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
         warnings.forEach(warning => {
@@ -18,8 +48,41 @@ document.getElementById("login").addEventListener("click", () => {
   });
 });
 
+function addUserToExcludedList(username) {
+  chrome.storage.local.get(DEFAULT_OPTIONS, (options) => {
+    const whitelistedUsers = options.whitelistedUsers || [];
+    if (!whitelistedUsers.includes(username)) {
+      whitelistedUsers.push(username);
+      chrome.storage.local.set({ whitelistedUsers }, () => {
+        document.getElementById('whitelistedUsers').value = whitelistedUsers.join(', ');
+        // Notify content script to clear this user from cache
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              type: "clearUserFromCache",
+              username: username 
+            });
+          }
+        });
+        populateFilteredUsersTable();
+      });
+    }
+  });
+}
+
+function removeUserFromWhitelist(username) {
+  chrome.storage.local.get(DEFAULT_OPTIONS, (options) => {
+    const whitelistedUsers = options.whitelistedUsers || [];
+    const newWhitelistedUsers = whitelistedUsers.filter(u => u !== username);
+    chrome.storage.local.set({ whitelistedUsers: newWhitelistedUsers }, () => {
+      document.getElementById('whitelistedUsers').value = newWhitelistedUsers.join(', ');
+      populateFilteredUsersTable();
+    });
+  });
+}
+
 function populateFilteredUsersTable() {
-  chrome.storage.local.get({ filteredUsers: [] }, ({ filteredUsers }) => {
+  chrome.storage.local.get({ filteredUsers: [], whitelistedUsers: [] }, ({ filteredUsers, whitelistedUsers }) => {
     const tbody = document.querySelector("#filtered-users-table tbody");
     tbody.innerHTML = "";
     filteredUsers.forEach(user => {
@@ -27,12 +90,16 @@ function populateFilteredUsersTable() {
       const tdUser = document.createElement("td");
       const tdReason = document.createElement("td");
       const tdPost = document.createElement("td");
+      const tdAction = document.createElement("td");
+      
       const a = document.createElement("a");
       a.href = user.url;
       a.textContent = user.username;
       a.target = "_blank";
       tdUser.appendChild(a);
+      
       tdReason.textContent = user.reason;
+      
       if (user.postUrl) {
         const postLink = document.createElement("a");
         postLink.href = user.postUrl;
@@ -42,28 +109,31 @@ function populateFilteredUsersTable() {
       } else {
         tdPost.textContent = "-";
       }
+
+      const whitelistBtn = document.createElement("button");
+      const isWhitelisted = whitelistedUsers.includes(user.username);
+      if (isWhitelisted) {
+        whitelistBtn.textContent = "Blacklist User";
+        whitelistBtn.className = "blacklist-user-button";
+        whitelistBtn.addEventListener("click", () => removeUserFromWhitelist(user.username));
+      } else {
+        whitelistBtn.textContent = "Whitelist User";
+        whitelistBtn.className = "whitelist-user-button";
+        whitelistBtn.addEventListener("click", () => addUserToExcludedList(user.username));
+      }
+      tdAction.appendChild(whitelistBtn);
+      
       tr.appendChild(tdUser);
       tr.appendChild(tdReason);
       tr.appendChild(tdPost);
+      tr.appendChild(tdAction);
       tbody.appendChild(tr);
     });
   });
 }
 
-// Default options
-const defaultOptions = {
-  minAccountAgeDays: 90,
-  minKarma: 10,
-  maxKarma: 1500000,
-  requireVerifiedEmail: false,
-  requireBothKarmaTypes: true,
-  excludePremium: false,
-  excludeMods: false,
-  linkKarmaRatio: 100
-};
-
 function loadOptionsForm() {
-  chrome.storage.local.get(defaultOptions, (options) => {
+  chrome.storage.local.get(DEFAULT_OPTIONS, (options) => {
     document.getElementById('minAccountAgeDays').value = options.minAccountAgeDays;
     document.getElementById('minKarma').value = options.minKarma;
     document.getElementById('maxKarma').value = options.maxKarma;
@@ -72,6 +142,9 @@ function loadOptionsForm() {
     document.getElementById('excludePremium').checked = options.excludePremium;
     document.getElementById('excludeMods').checked = options.excludeMods;
     document.getElementById('linkKarmaRatio').value = options.linkKarmaRatio;
+    document.getElementById('filterComments').checked = options.filterComments;
+    document.getElementById('whitelistedSubreddits').value = (options.whitelistedSubreddits || []).join(', ');
+    document.getElementById('whitelistedUsers').value = (options.whitelistedUsers || []).join(', ');
   });
 }
 
@@ -84,7 +157,16 @@ function saveOptionsFromForm() {
     requireBothKarmaTypes: document.getElementById('requireBothKarmaTypes').checked,
     excludePremium: document.getElementById('excludePremium').checked,
     excludeMods: document.getElementById('excludeMods').checked,
-    linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0
+    linkKarmaRatio: parseInt(document.getElementById('linkKarmaRatio').value, 10) || 0,
+    filterComments: document.getElementById('filterComments').checked,
+    whitelistedSubreddits: document.getElementById('whitelistedSubreddits').value
+      .split(/[,\n]/)
+      .map(s => s.trim())
+      .filter(Boolean),
+    whitelistedUsers: document.getElementById('whitelistedUsers').value
+      .split(/[,\n]/)
+      .map(s => s.trim())
+      .filter(Boolean)
   };
   
   // Save options
@@ -95,6 +177,12 @@ function saveOptionsFromForm() {
         reddit_token: data.reddit_token,
         CLIENT_ID: data.CLIENT_ID
       }, () => {
+        const saveSuccess = document.getElementById('save-success');
+        saveSuccess.style.display = 'block';
+        setTimeout(() => {
+          saveSuccess.style.display = 'none';
+        }, 1000);
+
         // Notify content script to clear cache and reload
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]) {
@@ -132,33 +220,14 @@ function loadConfigForm() {
   });
 }
 
-function showAuthWarning() {
+function displayWarning(type) {
+  const warning = WARNING_MESSAGES[type];
+  if (!warning) return;
   const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
-  warnings.forEach(warning => {
-    if (warning.id === 'clientid-warning') {
-      warning.textContent = 'Warning: Your Reddit authentication has expired. Please log in again in the Reddit API Config tab.';
-      warning.style.display = '';
-      warning.style.color = ERROR_COLOR;
-    } else if (warning.id === 'config-warning') {
-      warning.textContent = 'Your Reddit authentication has expired. Please log in again.';
-      warning.style.display = '';
-      warning.style.color = ERROR_COLOR;
-    }
-  });
-}
-
-function showRateLimitWarning() {
-  const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
-  warnings.forEach(warning => {
-    if (warning.id === 'clientid-warning') {
-      warning.textContent = 'Warning: Rate limited by Reddit API. Please wait a few minutes before trying again.';
-      warning.style.display = '';
-      warning.style.color = WARNING_COLOR;
-    } else if (warning.id === 'config-warning') {
-      warning.textContent = 'Rate limited by Reddit API. Please wait a few minutes before trying again.';
-      warning.style.display = '';
-      warning.style.color = WARNING_COLOR;
-    }
+  warnings.forEach(w => {
+    w.textContent = warning.text;
+    w.style.display = 'block';
+    w.style.color = warning.color;
   });
 }
 
@@ -169,22 +238,15 @@ function clearWarnings() {
     warning.style.display = 'none';
     warning.style.color = ERROR_COLOR;
   });
+  chrome.storage.local.set({ needsAuthWarning: false });
 }
 
 function showClientIdWarningIfNeeded() {
-  chrome.storage.local.get(["CLIENT_ID", "reddit_token"], (data) => {
-    if (!data.CLIENT_ID || !data.CLIENT_ID.trim() || !data.reddit_token) {
-      const warnings = document.querySelectorAll('#clientid-warning, #config-warning');
-      warnings.forEach(warning => {
-        if (warning.id === 'clientid-warning') {
-          warning.textContent = 'Warning: Reddit App Client ID is not set or you are not authenticated. This extension will not work without both. Go to the Reddit API Config tab to set it up.';
-          warning.style.display = '';
-          warning.style.color = ERROR_COLOR;
-        } else if (warning.id === 'config-warning') {
-          warning.style.display = '';
-          warning.style.color = ERROR_COLOR;
-        }
-      });
+  chrome.storage.local.get(["CLIENT_ID", "reddit_token", "needsAuthWarning"], (data) => {
+    if (data.needsAuthWarning || !data.reddit_token) {
+      displayWarning('NOT_AUTHENTICATED');
+    } else if (!data.CLIENT_ID || !data.CLIENT_ID.trim()) {
+      displayWarning('CLIENT_ID_MISSING');
     } else {
       clearWarnings();
     }
@@ -202,9 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for warning messages from content script
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "showAuthWarning") {
-      showAuthWarning();
+      displayWarning('NOT_AUTHENTICATED');
     } else if (request.type === "showRateLimitWarning") {
-      showRateLimitWarning();
+      displayWarning('RATE_LIMIT');
     } else if (request.type === "clearWarnings") {
       clearWarnings();
     }

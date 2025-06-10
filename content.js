@@ -1,21 +1,34 @@
 const userCache = {};
 let userQueue = [];
 let processing = false;
+let cachedToken = null;
 
-// Pages where filtering should be skipped
 const SKIP_FILTER_PATTERNS = [
-  /\/user\//,           // User profile pages
-  /\/message\//,        // Messages
-  /\/modmail\//,        // Modmail
-  /\/chat\//,           // Chat
+  /\/user\//,
+  /\/message\//,
+  /\/modmail\//,
+  /\/chat\//,
 ];
 
+function getCurrentSubreddit() {
+  const match = window.location.pathname.match(/\/r\/([^\/]+)/);
+  return match ? match[1].toLowerCase() : null;
+}
+
 function shouldSkipFiltering() {
+  if (!filterOptions) return false;
+  const subreddit = getCurrentSubreddit();
+  if (
+    filterOptions.whitelistedSubreddits &&
+    subreddit &&
+    filterOptions.whitelistedSubreddits.map(s => s.toLowerCase()).includes(subreddit)
+  ) {
+    return true;
+  }
   return SKIP_FILTER_PATTERNS.some(pattern => pattern.test(window.location.pathname));
 }
 
-// Default options
-const defaultOptions = {
+const DEFAULT_OPTIONS = {
   minAccountAgeDays: 90,
   minKarma: 10,
   maxKarma: 1500000,
@@ -23,17 +36,30 @@ const defaultOptions = {
   requireBothKarmaTypes: true,
   excludePremium: false,
   excludeMods: false,
-  linkKarmaRatio: 100
+  linkKarmaRatio: 100,
+  filterComments: true,
+  whitelistedSubreddits: ["iama"],
+  whitelistedUsers: []
 };
 
 let filterOptions = null;
 
 async function loadFilterOptions() {
   try {
-    const { minAccountAgeDays, minKarma, maxKarma, requireVerifiedEmail, 
-            requireBothKarmaTypes, excludePremium, excludeMods, linkKarmaRatio } = 
-      await chrome.storage.local.get(defaultOptions);
-    
+    const {
+      minAccountAgeDays,
+      minKarma,
+      maxKarma,
+      requireVerifiedEmail,
+      requireBothKarmaTypes,
+      excludePremium,
+      excludeMods,
+      linkKarmaRatio,
+      filterComments,
+      whitelistedSubreddits,
+      whitelistedUsers
+    } = await chrome.storage.local.get(DEFAULT_OPTIONS);
+
     filterOptions = {
       minAccountAgeDays,
       minKarma,
@@ -42,9 +68,12 @@ async function loadFilterOptions() {
       requireBothKarmaTypes,
       excludePremium,
       excludeMods,
-      linkKarmaRatio
+      linkKarmaRatio,
+      filterComments,
+      whitelistedSubreddits,
+      whitelistedUsers
     };
-    
+
     // Skip filtering if on a page that should not be filtered
     if (shouldSkipFiltering()) {
       return;
@@ -58,9 +87,14 @@ async function loadFilterOptions() {
   }
 }
 
-function shouldFilterUser(user) {
+function shouldFilterUser(user, username) {
   if (!filterOptions) {
     console.warn('Filter options not loaded yet');
+    return null;
+  }
+
+  // If user is in whitelisted users list, never filter their posts
+  if (filterOptions.whitelistedUsers && filterOptions.whitelistedUsers.map(u => u.toLowerCase()).includes(username.toLowerCase())) {
     return null;
   }
 
@@ -69,12 +103,19 @@ function shouldFilterUser(user) {
   if (user.karma < filterOptions.minKarma) return `Karma too low: ${user.karma.toLocaleString()}`;
   if (user.karma > filterOptions.maxKarma) return `Karma too high: ${user.karma.toLocaleString()}`;
   if (filterOptions.requireVerifiedEmail && !user.has_verified_email) return "Email not verified";
-  if (filterOptions.requireBothKarmaTypes && (user.link_karma === 0 || user.comment_karma === 0)) 
-    return `Missing either link (${user.link_karma.toLocaleString()}) or comment (${user.comment_karma.toLocaleString()}) karma`;
+  if (filterOptions.requireBothKarmaTypes) {
+    if (user.link_karma === 0 && user.comment_karma === 0) {
+      return "Missing both link and comment karma";
+    } else if (user.link_karma === 0) {
+      return "Missing link karma";
+    } else if (user.comment_karma === 0) {
+      return "Missing comment karma";
+    }
+  }
   if (filterOptions.excludePremium && user.is_gold) return "Premium user";
   if (filterOptions.excludeMods && user.is_mod) return "Moderator";
   if (filterOptions.linkKarmaRatio > 0 && user.comment_karma > 0 && user.link_karma > user.comment_karma * filterOptions.linkKarmaRatio) {
-    return `Link/Comment karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
+    return `Karma ratio too high: ${(user.link_karma / user.comment_karma).toFixed(1)}x`;
   }
   return null;
 }
@@ -87,9 +128,22 @@ function daysSince(unixTimestamp) {
 }
 
 async function getToken() {
+  if (cachedToken !== null) return cachedToken;
   const { reddit_token } = await chrome.storage.local.get("reddit_token");
+  cachedToken = reddit_token;
   return reddit_token;
 }
+
+function clearTokenCache() {
+  cachedToken = null;
+}
+
+// Listen for token changes to clear the cache
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.reddit_token) {
+    clearTokenCache();
+  }
+});
 
 async function fetchUserData(username) {
   // Check cache first
@@ -98,7 +152,11 @@ async function fetchUserData(username) {
   }
 
   const token = await getToken();
-  if (!token) throw new Error("No access token");
+  if (!token) {
+    chrome.storage.local.set({ needsAuthWarning: true });
+    chrome.runtime.sendMessage({ type: "showAuthWarning" });
+    throw new Error("No access token");
+  }
 
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
@@ -120,7 +178,6 @@ async function fetchUserData(username) {
               is_mod: response.data.data.is_mod
             };
             userCache[username] = userData;
-            // Clear any warnings since we got a successful response
             chrome.runtime.sendMessage({ type: "clearWarnings" });
             resolve(userData);
           } catch (err) {
@@ -151,13 +208,13 @@ function getUsernameFromPost(post) {
     const author = post.getAttribute('author');
     if (author) return author;
   }
-  
+
   // Try old Reddit
   const author = post.getAttribute('data-author');
   if (author) {
     return author;
   }
-  
+
   // Try new Reddit (alternative format)
   const authorElem = post.querySelector('a.author[href*="/user/"]');
   if (authorElem) {
@@ -195,6 +252,21 @@ function getPostInfo(post) {
     if (oldTitleElem) url = oldTitleElem.href;
   }
 
+  // Check if it's a comment (old Reddit)
+  if (post.classList.contains('comment') && post.hasAttribute('data-permalink')) {
+    url = `https://www.reddit.com${post.getAttribute('data-permalink')}`;
+    let commentText = '';
+    const commentBody = post.querySelector('.usertext-body .md');
+    if (commentBody) {
+      commentText = commentBody.textContent.trim();
+      if (commentText.length > 100) {
+        commentText = commentText.slice(0, 100) + '…';
+      }
+    }
+    title = commentText || '[Comment]';
+    return { title, url };
+  }
+
   // Try to extract subreddit, post ID, and slug from the URL
   let commentsUrl = url;
   const match = url.match(/reddit\.com\/(r\/([^\/]+)\/)?comments\/([a-z0-9]+)(?:\/([^\/?#]+))?/i);
@@ -215,12 +287,24 @@ function getPostInfo(post) {
 }
 
 async function processPost(post, username) {
-  // Small delay to help prevent rate limiting
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
+  // Instantly skip if post is no longer in the DOM
+  if (!document.body.contains(post)) return;
+
+  // Skip if post is above the viewport
+  const rect = post.getBoundingClientRect();
+  if (rect.bottom < 0) return;
+
+  // Skip comments if filterComments is false
+  if (filterOptions && filterOptions.filterComments === false) {
+    // Old Reddit comment
+    if (post.classList.contains('comment') && post.hasAttribute('data-permalink')) return;
+    // New Reddit comment
+    if (post.tagName === 'SHREDDIT-COMMENT') return;
+  }
+
   try {
     const user = await fetchUserData(username);
-    const filterReason = shouldFilterUser(user);
+    const filterReason = shouldFilterUser(user, username);
     if (filterReason) {
       post.style.display = "none";
       const { title, url } = getPostInfo(post);
@@ -235,7 +319,12 @@ async function processPost(post, username) {
       });
     }
   } catch (err) {
-    console.warn(`Failed to process post for user ${username}:`, err);
+    // Send warning message if error is rate limit or auth related
+    if (err.message?.includes('429')) {
+      chrome.runtime.sendMessage({ type: "showRateLimitWarning" });
+    } else if (err.message?.includes('401')) {
+      chrome.runtime.sendMessage({ type: "showAuthWarning" });
+    }
   }
 }
 
@@ -281,8 +370,6 @@ const observer = new IntersectionObserver(onIntersect, {
   threshold: 0.2
 });
 
-// Start observing the document body for new posts
-observer.observe(document.body, { childList: true, subtree: true });
 
 function enqueueUser(post, username) {
   userQueue.push({ post, username });
@@ -303,7 +390,6 @@ async function processQueue() {
         processing = false;
         return;
       }
-      console.warn(`Failed to process post for user ${username}:`, err);
     }
   }
   processing = false;
@@ -312,9 +398,10 @@ async function processQueue() {
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "clearCacheAndReload") {
-    // Clear the user cache
     Object.keys(userCache).forEach(key => delete userCache[key]);
-    // Reload filter options
+    loadFilterOptions();
+  } else if (request.type === "clearUserFromCache") {
+    delete userCache[request.username];
     loadFilterOptions();
   }
 });
